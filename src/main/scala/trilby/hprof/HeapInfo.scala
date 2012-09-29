@@ -35,7 +35,7 @@ import gnu.trove.map.hash.TLongIntHashMap
 
 class HeapInfo(val idSize: Int, val fileDate: Date) {
     
-    private[this] val numSlices = 2
+    private[this] val numSlices = 4
     
     /** True if 64-bit VM */
     val longIds = idSize == 8
@@ -129,9 +129,8 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
      * This is only valid until {@link #optimize} is called.
      */
 
-    def mapId(id: Long) = {
+    def mapId(id: Long) =
         objectIdMap.map(id, false)
-    }
     
     /**
      * Return a fabricated heap ID higher than the highest one already seen.  This
@@ -294,7 +293,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
         
         initialSizes = null // allow gc
         
-        slices.par foreach { _.preBuild() }
+        slices.par foreach { _.preBuild(objectIdMap) }
         slices.par foreach { _.build(maxId) }
         slices.par foreach { _.postBuild() }
         

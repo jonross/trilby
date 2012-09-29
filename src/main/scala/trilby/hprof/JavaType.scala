@@ -24,8 +24,6 @@ package trilby.hprof
 
 import java.util.HashMap
 
-import trilby.structx.IdMap3
-
 /**
  * Information about Java reference and primitive types.
  */

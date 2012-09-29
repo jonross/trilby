@@ -1,4 +1,5 @@
 package trilby.hprof
+import trilby.structx.IdMap3
 
 class HeapSlice(heap: HeapInfo, sliceId: Int, numSlices: Int) {
     
@@ -9,7 +10,7 @@ class HeapSlice(heap: HeapInfo, sliceId: Int, numSlices: Int) {
     
     /** Temporary object, records references as the heap is read */
     private[hprof] var graphBuilder = 
-        new ObjectGraphBuilder(id => heap.mapId(id), sliceId, numSlices)
+        new ObjectGraphBuilder(sliceId, numSlices)
     
     /** After heap read, {@link #graphBuilder} builds this */
     private[this] var graph: ObjectGraph = null
@@ -23,9 +24,9 @@ class HeapSlice(heap: HeapInfo, sliceId: Int, numSlices: Int) {
     def forEachReferee(id: Int, fn: Int => Unit) = 
         graph.forEachReferee(id, fn)
         
-    def preBuild() = {
-        graphBuilder.mapHeapIds()
-        println(Thread.currentThread.getName)
+    def preBuild(idMap: IdMap3) = {
+        println("Remapping heap IDs")
+        graphBuilder.mapHeapIds(idMap)
     }
 
     private[hprof] def build(maxId: Int) {

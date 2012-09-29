@@ -30,6 +30,8 @@ import trilby.struct.BitSet
 import trilby.struct.VarIntSequence
 import trilby.struct.ExpandoArray
 import trilby.util.NumericHistogram
+import trilby.structx.IdMap3
+import trilby.util.Stuff
 
 /**
  * Size: 2 edge sets, each containing a per-ID offset and array of edges, +
@@ -203,7 +205,7 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
  * TODO: move to Int in signature, now using compressed HIDs.
  */
 
-class ObjectGraphBuilder(idMap: Long => Int, sliceId: Int, numSlices: Int) {
+class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
     
     /** Synthetic object IDs at source of each edge */
     private[this] val refsFrom = new ExpandoArray.OfInt()
@@ -230,16 +232,8 @@ class ObjectGraphBuilder(idMap: Long => Int, sliceId: Int, numSlices: Int) {
      * Map reference target heap IDs to object IDs.
      */
     
-    def mapHeapIds() {
-        var i = 0
-        var max = refsFrom.size
-        while (i < max) {
-            val mapped = idMap(refsTo.get(i) & 0xFFFFFFFFL)
-            refsTo.set(i, mapped)
-            i += 1
-            if (mapped == 0)
-                _numDead += 1
-        }
+    def mapHeapIds(idMap: IdMap3) {
+        _numDead = Stuff.remap(refsFrom, refsTo, idMap)
     }
     
     /* Return # of references */
@@ -256,20 +250,29 @@ class ObjectGraphBuilder(idMap: Long => Int, sliceId: Int, numSlices: Int) {
         for (i <- (0 until refsFrom.size))
             fn(refsFrom.get(i), refsTo.get(i))
     
-    def forEachReferee(fn: Int => Unit) =
-        for (i <- (0 until refsTo.size)) {
+    def forEachReferee(fn: Int => Unit) = {
+        // This oughtn't be faster than @inlined Range.foreach, but HPROF says it is.
+        var i = 0
+        val end = refsTo.size
+        while (i < end) {
             val to = refsTo.get(i)
             if (to % numSlices == sliceId) {
                 fn(to)
             }
+            i += 1
         }
-    
+    }
+        
     def forEachBackwardReference(fn: (Int, Int) => Unit) {
-        for (i <- (0 until refsTo.size)) {
+        // This oughtn't be faster than @inlined Range.foreach, but HPROF says it is.
+        var i = 0
+        val end = refsTo.size
+        while (i < end) {
             val to = refsTo.get(i)
             if (to % numSlices == sliceId) {
                 fn(to, refsFrom.get(i))
             }
+            i += 1
         }
     }
 }

@@ -138,7 +138,7 @@ class ClassInfo (heap: HeapInfo) {
     def rebase() {
         
         val allClasses = getAll.sortWith((a, b) => a.count > b.count)
-        var remap = new Array[Int](allClasses.length + 1)
+        var remap = new Array[Int](allClasses.length + 2) // IDs are 1-based
         byClassId.clear()
         nextClassId = 1
         
