@@ -37,7 +37,7 @@ trait HeapData {
     
     def eof: Boolean
     def position: Long
-    def demand(count: Int): Unit
+    def demand(count: Long): Unit
     
     def readByte(): Int
     def readInt(): Int
@@ -65,7 +65,7 @@ trait HeapData {
     }
     
     def readAll(buf: Array[Byte], offset: Int, count: Int)
-    def skip(count: Int)
+    def skip(count: Long)
 
 }
 
@@ -95,6 +95,7 @@ class MappedHeapData(private val channel: FileChannel,
     def readLong() = mapped.getLong()
     def readUByte() = mapped.get() & 0xFF
     def readUShort() = mapped.getShort() & 0xFFFF
+    def readULong() = mapped.getInt() & 0xFFFFFFFFL
     
     def readInt(pos: Long) = mapped.getInt(move(pos))
     def readLong(pos: Long) = mapped.getLong(move(pos))
@@ -105,15 +106,15 @@ class MappedHeapData(private val channel: FileChannel,
     def readAll(buf: Array[Byte], offset: Int, count: Int) =
         mapped.get(buf, offset, count)
     
-    def skip(nbytes: Int) {
+    def skip(nbytes: Long) {
         val overrun = nbytes - mapped.remaining
         if (overrun > 0)
             remap(offset + mapped.limit + overrun)
         else
-            mapped position(mapped.position + nbytes)
+            mapped position(mapped.position + nbytes.asInstanceOf[Int])
     }
     
-    def demand(nbytes: Int) {
+    def demand(nbytes: Long) {
         val overrun = nbytes - mapped.remaining
         if (overrun > 0)
             remap(offset + mapped.position)
@@ -127,7 +128,7 @@ class StreamHeapData(val input: DataInput, val size: Long) extends HeapData {
     
     def position = pos
     def eof = pos >= size
-    def demand(count: Int) {}
+    def demand(count: Long) {}
 
     def readByte() = {
         val result = input.readByte()
@@ -164,8 +165,9 @@ class StreamHeapData(val input: DataInput, val size: Long) extends HeapData {
         pos += count
     }
     
-    def skip(count: Int) {
-        val skipped = input.skipBytes(count)
+    def skip(count: Long) {
+        val canSkip = if (count <= Int.MaxValue) count.asInstanceOf[Int] else Int.MaxValue
+        val skipped = input.skipBytes(canSkip)
         if (skipped == 0)
             panic("skip failure postion=%d count=%d".format(position, count))
         pos += skipped;

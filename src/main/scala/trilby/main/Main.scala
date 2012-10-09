@@ -28,94 +28,63 @@ import trilby.hprof.HeapInfo
 import trilby.hprof.HProfReader
 import trilby.reports.ClassHistogram
 import trilby.util.ObjectSet
-import trilby.util.Options
-import trilby.util.RawBufferedFile
 import trilby.util.StreamHeapData
 import trilby.query.GraphQueryParser
 import trilby.util.MappedHeapData
+import trilby.util.Oddments._
 import trilby.reports.GraphSearch2
-
-/**
- * Command line launcher.
- * See {@link Options} for details.
- */
 
 object Main {
     
-    def main(args: Array[String]) {
+    case class Options(val histogram: Boolean = false,
+                       val interactive: Boolean = false,
+                       val heapFile: File = null) {
         
-        val options = Options.parseCommandLine(args)
-        if (options == null)
-            System.exit(1)
+        def parse(options: List[String]): Options = options match {
+            case "--histo" :: _ => copy(histogram = true) parse options.tail
+            case "--inter" :: _ => copy(interactive = true) parse options.tail
+            case x :: _ if x(0) == '-' => die("Unknown option: " + x)
+            case x :: Nil => copy(heapFile = new File(x))
+            case _ => die("Missing or extraneous heap filenames")
+        }
         
-        BasicConfigurator.configure()
+        def heap =
+            new HProfReader(new MappedHeapData(heapFile)).read
+    }
+    
+    def main(args: Array[String]) = protect {
+        time("Session") {
+            BasicConfigurator.configure
+            run(Options() parse args.toList)
+        }
+    }
+    
+    def run(options: Options) {
 
-        val startTime = System.currentTimeMillis()
-        
-        // val file = new File(options.args.get(0))
-        // val stream = new RawBufferedFile(file, 1048576)
-        // val data = new StreamHeapData(stream.asDataInput, file.length)
-        
-        val data = new MappedHeapData(new File(options.args.get(0)))
-        
-        val reader = new HProfReader(data)
-        val heap = reader.read()
-        
-        // TODO: turn off trackReferences if not needed
+        val data = new MappedHeapData(options.heapFile)
+        val heap = new HProfReader(data).read
         
         if (options.interactive) {
-            _interactiveMode(heap)
+            println("Entering interactive mode")
+            val input = Stream continually { scala.Console readLine "> " }
+            for (line <- input takeWhile (_ != null) map (_.trim) filter (_.length > 0)) {
+                protect { new GraphQueryParser(heap) parseFinder line apply }
+            }
         }
         
         else if (options.histogram) {
-            val report = new ClassHistogram(heap, options.showIds)
-            heap.forEachInstance(id => {
-                val classDef = heap.classes.getForObjectId(id)
-                report.add(id, classDef, heap.getObjectSize(id))
+            val report = new ClassHistogram(heap, false)
+            heap forEachInstance (id => {
+                val classDef = heap.classes getForObjectId id
+                report.add(id, classDef, heap getObjectSize id)
             })
-            _runReport(report)
+            val pw = new PrintWriter(System.out)
+            report.render(pw)
+            pw.flush()
         }
         
         else {
-            System.err.println("Nothing to do")
-            System.exit(1)
+            die("Nothing to do")
         }
-
-        val endTime = System.currentTimeMillis()
-        printf("Total runtime = %dms\n", endTime - startTime)
     }
-    
-    private def _runReport(report: { def render(pw: PrintWriter) }) {
-        val pw = new PrintWriter(System.out)
-        report.render(pw)
-        pw.flush()
-    }
-    
-    private def _interactiveMode(heap: HeapInfo) {
-        println("Entering interactive mode")
-        val in = new LineNumberReader(new InputStreamReader(System.in))
-        var line: String = null
-        while (true) {
-            print("> ")
-            line = in.readLine()
-            if (line == null) {
-                return
-            }
-            line = line.trim()
-            if (line.length() > 0) {
-                try {
-                    val action = new GraphQueryParser(heap).parseFinder(line)
-                    action()
-                }
-                catch {
-                    case e: IOException =>
-                        return
-                    case e: Exception =>
-                        e.printStackTrace(System.err)
-                }
-            }
-        }
-        
-    }
-
 }

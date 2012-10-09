@@ -29,7 +29,7 @@ import trilby.struct.ExpandoArray
 import trilby.struct.Counts
 import com.google.common.primitives.Ints
 
-class ClassInfo (heap: HeapInfo) {
+class ClassInfo {
 
     /** Maps demangled class names to ClassDefs */
     private[this] val byName = new HashMap[String,ClassDef](100000)
@@ -58,7 +58,7 @@ class ClassInfo (heap: HeapInfo) {
     
     def addClassDef(name: String, heapId: Long,
             superHeapId: Long, fields: Array[Field]) = {
-        val classDef = new ClassDef(heap, name, nextClassId, heapId, superHeapId, fields)
+        val classDef = new ClassDef(this, name, nextClassId, heapId, superHeapId, fields)
         byName.put(classDef.name, classDef)
         byClassId.put(classDef.classId, classDef)
         byHeapId.put(classDef.heapId, classDef)
@@ -135,7 +135,7 @@ class ClassInfo (heap: HeapInfo) {
      * allowing us to move the objectId -> classId mapping into a Counts.TwoByte.
      */
     
-    def rebase() {
+    def rebase(maxId: Int) {
         
         val allClasses = getAll.sortWith((a, b) => a.count > b.count)
         var remap = new Array[Int](allClasses.length + 2) // IDs are 1-based
@@ -151,8 +151,8 @@ class ClassInfo (heap: HeapInfo) {
         
         getByName("java.util.HashMap$Entry").refOffsets.foreach(println)
         
-        finalObjectMap = new Counts.TwoByte(heap.maxId + 1, 0.001)
-        for (objectId <- 1 to heap.maxId)
+        finalObjectMap = new Counts.TwoByte(maxId + 1, 0.001)
+        for (objectId <- 1 to maxId)
             finalObjectMap.adjust(objectId, remap(initialObjectMap.get(objectId)))
         
         initialObjectMap = null // allow GC
@@ -163,8 +163,8 @@ class ClassInfo (heap: HeapInfo) {
  * One of these tracks each class defined in the heap dump.
  */
 
-class ClassDef(/** Parent heap descriptor */
-               heap: HeapInfo, 
+class ClassDef(/** Who holds this def */
+               info: ClassInfo,
                /** Demangled class name */
                val name: String,
                /** Synthetic class ID assigned by {@link ClassInfo#addClassDef} */
@@ -238,7 +238,7 @@ class ClassDef(/** Parent heap descriptor */
      */
         
     def superDef = {
-        val classDef = heap.classes.getByHeapId(superHeapId)
+        val classDef = info.getByHeapId(superHeapId)
         if (classDef == null)
             panic("No superDef " + superHeapId + " for " + this)
         classDef
@@ -272,7 +272,7 @@ class ClassDef(/** Parent heap descriptor */
         } toArray
     }
     
-    private def dumpSpan: Int = 
+    def dumpSpan: Int = 
         if (isRoot) fieldSpan else fieldSpan + superDef.dumpSpan
         
     private def allFields: List[Field] = 

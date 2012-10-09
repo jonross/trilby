@@ -86,7 +86,7 @@ class HProfReader (data: MappedHeapData) {
             data.demand(9)
             val tag = data.readUByte()
             data.skip(4) // ignore timestamp
-            val length = data.readInt()
+            val length = data.readULong()
             data.demand(length)
             if (tag < 0 || tag >= recordHandlers.length)
                 panic("Bad tag %d at input position %d".format(tag, data.position))
@@ -103,7 +103,7 @@ class HProfReader (data: MappedHeapData) {
     }
     
     private[this] val recordHandlers = {
-        val h = new Array[Int => Unit](MAX_RECORD_TYPE+1)
+        val h = new Array[Long => Unit](MAX_RECORD_TYPE+1)
         h(UTF8) = handleUTF8Record
         h(LOAD_CLASS) = handleLoadClassRecord
         h(UNLOAD_CLASS) = skipRecord
@@ -120,20 +120,19 @@ class HProfReader (data: MappedHeapData) {
         h
     }
     
-    private def skipRecord(length: Int) = 
-        if (length > 0)
-            data.skip(length)
+    private def skipRecord(length: Long) = 
+        if (length > 0) data.skip(length)
     
-    private def handleUTF8Record(length: Int) {
+    private def handleUTF8Record(length: Long) {
         val id = data.readId()
-        val nBytes = length - heap.idSize
+        val nBytes = length.asInstanceOf[Int] - heap.idSize
         if (nBytes > buf.length)
             buf = new Array[Byte](nBytes)
         data.readAll(buf, 0, nBytes)
         heap.addString(id, new String(buf, 0, nBytes))
     }
     
-    private def handleLoadClassRecord(length: Int) {
+    private def handleLoadClassRecord(length: Long) {
         data.readInt() // classSerial
         val id = data.readId()
         data.readInt() // stackSerial
@@ -141,7 +140,7 @@ class HProfReader (data: MappedHeapData) {
         heap.addLoadedClass(id, nameId)
     }
     
-    private def handleHeapSection(length: Int) {
+    private def handleHeapSection(length: Long) {
         printf("Heap dump or segment of %d MB at offset %d\n",
                 length / 1024 / 1024, data.position)
         val segmentReader = new SegmentReader(heap, data, length)

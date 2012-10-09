@@ -111,12 +111,12 @@ public class Counts
     
     public static class MostlyBinary
     {
-        private FastBitSet ones, mores;
+        private BitSet.Basic ones, mores;
         private TIntIntHashMap map;
         
         public MostlyBinary(int nIds) {
-            ones = new FastBitSet(nIds);
-            mores = new FastBitSet(nIds);
+            ones = new BitSet.Basic(nIds);
+            mores = new BitSet.Basic(nIds);
             map = new TIntIntHashMap(nIds / 100);
         }
         

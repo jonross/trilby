@@ -25,10 +25,11 @@ package trilby.reports
 import trilby.hprof.HeapInfo
 import trilby.query.GraphQuery
 import trilby.util.ObjectSet
-import trilby.struct.IntSet
 import trilby.struct.IntStack
 import trilby.query.Target
+
 import gnu.trove.map.hash.TIntIntHashMap
+import gnu.trove.map.hash.TIntByteHashMap
 
 class GraphSearch2(heap: HeapInfo, query: GraphQuery) {
     
@@ -74,7 +75,7 @@ class GraphSearch2(heap: HeapInfo, query: GraphQuery) {
         val baseClass = heap.classes getByName target.types
         
         // Class IDs of the base class and all subclasses
-        val matchingClasses = new IntSet
+        val matchingClasses = new TIntByteHashMap()
         
         // What object IDs have been elided, by this finder, at this pass
         val elided = new TIntIntHashMap
@@ -97,13 +98,13 @@ class GraphSearch2(heap: HeapInfo, query: GraphQuery) {
         val typePrefix = target.types.substring(0, target.types.length - 1)
         
         if (baseClass != null)
-            matchingClasses add baseClass.classId
+            matchingClasses.put(baseClass.classId, 1)
         
         for (classDef <- heap.classes getAll)
             if (baseClass != null && (classDef hasSuper baseClass))
-                matchingClasses add classDef.classId
+                matchingClasses.put(classDef.classId, 1)
             else if (isWild && classDef.name.startsWith(typePrefix))
-                matchingClasses add classDef.classId
+                matchingClasses.put(classDef.classId, 1)
                 
         
         println(target.types + " matches " + matchingClasses.size + " classes")
@@ -123,7 +124,7 @@ class GraphSearch2(heap: HeapInfo, query: GraphQuery) {
         private def doCheck(id: Int) = {
             focus(index) = id
             val classDef = heap.classes getForObjectId id
-            if (matchingClasses has classDef.classId) {
+            if (matchingClasses contains classDef.classId) {
                 // printf("Match[%d] %d a %s\n", index, id, classDef.name)
                 if (next != null) {
                     // We're not the end of the path so let the next finder

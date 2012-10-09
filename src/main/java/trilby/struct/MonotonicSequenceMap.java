@@ -27,7 +27,7 @@ import gnu.trove.map.hash.TIntIntHashMap;
 /**
  * This class space-efficiently maps a sequence of integers 0..n onto some
  * monotonic sequence B(0)...B(n) where the difference between each successive
- * B(i), B(j) is very small. Given a width W, W/n "bases" are stored as
+ * B(i), B(i+1) is very small. Given a width W, W/n "bases" are stored as
  * full-width integers, while the intervening values are stored as byte offsets
  * from each base. Outliers, where the delta is larger than 254, are stored in
  * a separate map.  W must be chosen carefully to minimize outliers while

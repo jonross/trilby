@@ -27,7 +27,7 @@ import gnu.trove.map.hash.TLongLongHashMap
 import trilby.struct.Counts
 import trilby.struct.ExpandoArray
 import trilby.struct.Sequence
-import trilby.structx.IdMap3
+import trilby.struct.IdMap3
 import trilby.util.Oddments._
 import java.util.Date
 import java.util.HashMap
@@ -35,13 +35,13 @@ import gnu.trove.map.hash.TLongIntHashMap
 
 class HeapInfo(val idSize: Int, val fileDate: Date) {
     
-    private[this] val numSlices = 4
+    private[this] val numSlices = 1
     
     /** True if 64-bit VM */
     val longIds = idSize == 8
     
     /** Subcontract out class information */
-    val classes = new ClassInfo(this)
+    val classes = new ClassInfo()
     
     /** Worker data slices */
     val slices = (0 until numSlices).map(new HeapSlice(this, _, numSlices)).toArray
@@ -281,7 +281,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
         }
         
         System.out.println("Rebasing classes")
-        classes.rebase()
+        classes.rebase(maxId)
         
         // Sizes can be compressed as most fit in two bytes.
         

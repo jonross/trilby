@@ -21,7 +21,7 @@
  */
 
 package trilby.util
-import trilby.struct.FastBitSet
+import trilby.struct.BitSet
 
 /**
  * A subset of the objects IDs in a heap.
@@ -29,7 +29,7 @@ import trilby.struct.FastBitSet
 
 class ObjectSet(val maxId: Int) {
     
-    private[this] val bits = new FastBitSet(maxId+1)
+    private[this] val bits = new BitSet.Basic(maxId+1)
     
     def add(objectId: Int) = bits.set(objectId)
     

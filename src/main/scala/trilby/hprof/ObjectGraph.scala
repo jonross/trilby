@@ -27,11 +27,9 @@ import trilby.struct.Unboxed
 import trilby.struct.Unboxed.IntIterator
 import trilby.struct.Counts
 import trilby.struct.BitSet
-import trilby.struct.VarIntSequence
 import trilby.struct.ExpandoArray
 import trilby.util.NumericHistogram
-import trilby.structx.IdMap3
-import trilby.util.Stuff
+import trilby.struct.IdMap3
 
 /**
  * Size: 2 edge sets, each containing a per-ID offset and array of edges, +
@@ -233,7 +231,17 @@ class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
      */
     
     def mapHeapIds(idMap: IdMap3) {
-        _numDead = Stuff.remap(refsFrom, refsTo, idMap)
+        var i = 0
+        val max = refsTo.size
+        while (i < max) {
+            val unmapped = refsTo.get(i) & 0xFFFFFFFFL
+            val mapped = idMap.map(unmapped, false)
+            refsTo.set(i, mapped)
+            if (mapped == 0) {
+                _numDead += 1
+            }
+            i += 1
+        }
     }
     
     /* Return # of references */

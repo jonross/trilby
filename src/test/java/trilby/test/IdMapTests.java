@@ -23,10 +23,7 @@
 package trilby.test;
 
 import static org.junit.Assert.*;
-import trilby.structx.IdMap;
-import trilby.structx.IdMap2;
-import trilby.structx.IdMap3;
-import trilby.structx.IdMap4;
+import trilby.struct.IdMap3;
 
 import org.junit.Test;
 
@@ -36,12 +33,12 @@ public class IdMapTests
     
     @Test
     public void testIdMaps() {
-        verify(new IdMap2());
+        // verify(new IdMap2());
         verify(new IdMap3());
-        verify(new IdMap4());
+        // verify(new IdMap4());
     }
     
-    private void verify(IdMap idMap) {
+    private void verify(IdMap3 idMap) {
         
         long[] in = new long[NUM_IDS];
         int[] out = new int[NUM_IDS];

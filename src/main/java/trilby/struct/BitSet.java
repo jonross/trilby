@@ -22,14 +22,6 @@
 
 package trilby.struct;
 
-/**
- * Maybe should be called FastAndLooseBitSet, as it works without any bounds
- * checking.  We use this rather heavily to represent a set of object IDs and
- * value raw speed over the added features of {@link java.util.BitSet}.  Notably
- * we want individual set/clear to be very fast and are willing to waste time
- * ANDing and ORing other (possibly sparse) bit sets.
- */
-
 public abstract class BitSet
 {
     private final static int SHIFT = 6; // 1 << SHIFT = 64 bits in a long

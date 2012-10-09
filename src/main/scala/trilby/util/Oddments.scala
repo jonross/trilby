@@ -23,19 +23,43 @@
 package trilby.util
 import com.google.common.base.Splitter
 import trilby.struct.Unboxed.IntIterator
+import java.io.PrintStream
 
 object Oddments {
     
-    // TODO: fix
-    def panic(message: String) =
-        throw new RuntimeException(message)
+    def protect[T](block: => T) { try { block } catch {
+        case Error(msg, e, status) =>
+            warn(msg)
+            if (e != null)
+                e printStackTrace System.err
+            if (status >= 0)
+                System exit status
+        case e: Exception =>
+            warn("Unexpected exception")
+            e printStackTrace System.err
+    } }
     
-    // TODO: fix
-    def fail(message: String) =
-        throw new RuntimeException(message)
+    case class Error(msg: String, e: Exception, status: Int) extends Exception(msg, e)
     
-    def warn(message: String) =
-        System.err println message
+    def die(msg: String) = throw Error(msg, null, 1)
+    def fail(msg: String) = throw Error(msg, null, -1)
+    def panic(msg: String, e: Exception = null) = throw Error(msg, e, -1)
+    
+    def time[T](task: String)(block: => T) = {
+        val start = System.currentTimeMillis
+        val result = block
+        val end = System.currentTimeMillis
+        info("%s took %d ms", task, end - start)
+        result
+    }
+    
+    // TODO: use logger
+    
+    def info(fmt: String, args: Any*) = output(System.out, fmt.format(args: _*))
+    def warn(fmt: String, args: Any*) = output(System.err, fmt.format(args: _*))
+    
+    def output(out: PrintStream, s: String) =
+        out.print(s)
         
     /**
      * Demangle heap class names, e.g.<br/>

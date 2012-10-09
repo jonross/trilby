@@ -52,6 +52,14 @@ public class Unboxed
     public interface IntIntFn {
         int apply(int x);
     }
+    
+    public interface IntVoidFn {
+        void apply(int x);
+    }
+    
+    public interface IntIntVoidFn {
+        void apply(int x, int y);
+    }
 
     public interface LongIntFn {
         int apply(long x);

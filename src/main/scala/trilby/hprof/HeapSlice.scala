@@ -1,5 +1,5 @@
 package trilby.hprof
-import trilby.structx.IdMap3
+import trilby.struct.IdMap3
 
 class HeapSlice(heap: HeapInfo, sliceId: Int, numSlices: Int) {
     
@@ -35,6 +35,6 @@ class HeapSlice(heap: HeapInfo, sliceId: Int, numSlices: Int) {
         printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
     }
     
-    def postBuild() =
+    def postBuild() = 
         graphBuilder = null // allow GC
 }

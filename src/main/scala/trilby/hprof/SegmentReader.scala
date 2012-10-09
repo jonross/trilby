@@ -28,7 +28,7 @@ import java.util.Date
 import trilby.util._
 import trilby.util.Oddments._
 
-class SegmentReader (heap: HeapInfo, data: MappedHeapData, length: Int) {
+class SegmentReader (heap: HeapInfo, data: MappedHeapData, length: Long) {
     
     private[this] var numRecords = 0
     private[this] var buf = new Array[Byte](1000)
@@ -172,22 +172,20 @@ class SegmentReader (heap: HeapInfo, data: MappedHeapData, length: Int) {
         
         heap.addInstance(hid, classHid, offset, size + heap.idSize)
         
-        if (size > 0)
+        if (size > 0) {
+            data.demand(size)
             scanInstance2(heap.mapId(hid), classHid, 0, size)
+        }
     }
     
     private def scanInstance2(tid: Int, classHid: Long, dummy: Int, remain: Int) {
         val classDef = classes.getByHeapId(classHid)
         if (classDef == null)
             panic("No class def with id " + classHid)
-        val showIt = classDef.name equals "java.net.URL"
         var i = 0
         val pos = data.position
         val offsets = classDef.refOffsets
         while (i < offsets.length) {
-            if (showIt) {
-                // printf("Read " + offsets(i) + " at " + (pos + offsets(i).offset) + "\n")
-            }
             val toId = data.readId(pos + offsets(i).offset)
             if (toId != 0)
                 heap.addReference(tid, toId)

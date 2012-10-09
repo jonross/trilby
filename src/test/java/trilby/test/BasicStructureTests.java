@@ -27,9 +27,7 @@ import trilby.struct.BitSet;
 import trilby.struct.Counts;
 import trilby.struct.MonotonicSequenceMap;
 import trilby.struct.Sequence;
-import trilby.struct.Unboxed.IntIterator;
 import trilby.struct.Unboxed.LongIterator;
-import trilby.struct.VarIntSequence;
 
 import java.util.Random;
 
@@ -113,24 +111,6 @@ public class BasicStructureTests
         }
         for (int i = 0; i < nbits; i++)
             assertEquals(values[i], bits.get(i));
-    }
-    
-    @Test
-    public void testVarInt()
-    {
-        VarIntSequence vs = new VarIntSequence();
-        Random r = new Random(0);
-        int values[] = new int[1000000];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = r.nextInt();
-            vs.add(values[i]);
-        }
-        int j = 0;
-        IntIterator ii = vs.ints();
-        while (ii.hasNext()) {
-            assertEquals(values[j++], ii.next());
-        }
-        assertEquals(values.length, j);
     }
     
     @Test
