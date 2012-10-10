@@ -41,7 +41,7 @@ class ClassInfo {
     private[this] val byClassId = new TIntObjectHashMap[ClassDef](100000)
     
     /** Stores each object's class ID while reading the heap. */
-    private[this] var initialObjectMap = new ExpandoArray.OfInt
+    private[this] var initialObjectMap = new ExpandoArray.OfInt(10240, false)
     
     /** After reading the heap, {@link #initialObjectMap} is optimized to this. */
     private[this] var finalObjectMap: Counts.TwoByte = null
@@ -155,6 +155,7 @@ class ClassInfo {
         for (objectId <- 1 to maxId)
             finalObjectMap.adjust(objectId, remap(initialObjectMap.get(objectId)))
         
+        initialObjectMap.destroy()
         initialObjectMap = null // allow GC
     }
 }

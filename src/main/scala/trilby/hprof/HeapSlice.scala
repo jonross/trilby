@@ -35,6 +35,8 @@ class HeapSlice(heap: HeapInfo, sliceId: Int, numSlices: Int) {
         printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
     }
     
-    def postBuild() = 
+    def postBuild() {
+        graphBuilder.destroy()
         graphBuilder = null // allow GC
+    }
 }

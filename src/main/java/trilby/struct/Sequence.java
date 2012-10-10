@@ -32,9 +32,9 @@ public class Sequence
     
     public static class OfMonotonicLong
     {
-        private final ExpandoArray.OfByte  bytes    = new ExpandoArray.OfByte();
-        private final ExpandoArray.OfShort shorts   = new ExpandoArray.OfShort();
-        private final ExpandoArray.OfInt   ints     = new ExpandoArray.OfInt();
+        private final ExpandoArray.OfByte  bytes    = new ExpandoArray.OfByte(10240, true);
+        private final ExpandoArray.OfShort shorts   = new ExpandoArray.OfShort(10240, true);
+        private final ExpandoArray.OfInt   ints     = new ExpandoArray.OfInt(10240, true);
 
         private long previous = 0;
         private int size = 0;

@@ -22,12 +22,8 @@
 
 package trilby.struct;
 
-import trilby.struct.Unboxed.IntIterable;
-import trilby.struct.Unboxed.IntIterator;
-
-import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 /**
  * A dynamic array that expands without GC, up to a preset limit.  Instances of this are
@@ -42,180 +38,158 @@ import java.nio.IntBuffer;
 
 public class ExpandoArray
 {
-    private final static int BUCKET_SIZE = 1<<10;
-    private final static int NUM_BUCKETS = 1<<10;
-    
-    /**
-     * Here A is the bucket array type e.g. <code>int[]</code>.  I could arguably use Scala
-     * specializations rather than define separate subclasses but I don't trust them.
-     */
-    
-    public abstract static class OfThing<A>
+    public abstract static class Base
     {
-        protected A[] buckets;
+        private ByteBuffer[] buffers;
+        protected final int bufSize;
+        protected final int numSize;
+        private final boolean onHeap;
         protected int cursor = 0;
         private int high = -1;
-        private A template;
         
-        @SuppressWarnings("unchecked")
-        protected OfThing(int initialSize) {
-            template = newBucket(1);
-            buckets = (A[]) Array.newInstance(template.getClass(), initialSize);
+        protected Base(int bufferSize, int numSize, boolean onHeap) {
+            this.onHeap = onHeap;
+            this.numSize = numSize;
+            this.bufSize = bufferSize;
+            this.buffers = new ByteBuffer[1024];
         }
         
         public int size() {
             return high+1;
         }
         
-        abstract protected A newBucket(int size);
-        
-        protected A getBucket(int index) {
-            int slot = index / BUCKET_SIZE;
-            if (slot >= buckets.length)
-                throw new ArrayIndexOutOfBoundsException(index);
-            return buckets[slot];
+        public void destroy() {
+            if (!onHeap) {
+                Thread t = new Thread() {
+                    public void run() {
+                        for (int i = 0; i < buffers.length; i++) {
+                            if (buffers[i] != null) {
+                                Base.destroy(buffers[i]);
+                            }
+                        }
+                    }
+                };
+                t.setDaemon(true);
+                t.start();
+            }
         }
         
-        @SuppressWarnings("unchecked")
-        protected A getOrCreateBucket(int index) {
-            if (index > high)
-                high = index;
-            int slot = index / BUCKET_SIZE;
-            if (slot >= buckets.length) {
-                int newsize = buckets.length;
-                while (newsize <= slot)
-                    newsize *= 1.5;
-                A[] newbuckets = (A[]) Array.newInstance(template.getClass(), newsize);
-                System.arraycopy(buckets, 0, newbuckets, 0, buckets.length);
-                buckets = newbuckets;
+        // Method from
+        // http://stackoverflow.com/questions/1854398/how-to-garbage-collect-a-direct-buffer-java
+        // This of course is Sun-specific, for now.
+        
+        private static Method cleanerMethod = null;
+        private static Method cleanMethod = null;
+        
+        private static void destroy(ByteBuffer buf) {
+            try {
+                if (cleanerMethod == null) {
+                    cleanerMethod = buf.getClass().getMethod("cleaner");
+                    cleanerMethod.setAccessible(true);
+                }
+                Object cleaner = cleanerMethod.invoke(buf);
+                if (cleanMethod == null) {
+                    cleanMethod = cleaner.getClass().getMethod("clean");
+                    cleanMethod.setAccessible(true);
+                }
+                cleanMethod.invoke(cleaner);
             }
-            A bucket = buckets[slot];
-            if (bucket == null)
-                bucket = buckets[slot] = newBucket(BUCKET_SIZE);
-            return bucket;
+            catch (Exception e) {
+                throw new RuntimeException(e); // TODO fix
+            }
+        }
+        
+        protected ByteBuffer getBuffer(int index) {
+            int slot = index / bufSize;
+            if (slot >= buffers.length) {
+                throw new ArrayIndexOutOfBoundsException(index);
+            }
+            return buffers[slot];
+        }
+        
+        protected ByteBuffer getOrCreateBuffer(int index) {
+            if (index > high) {
+                high = index;
+            }
+            int slot = index / bufSize;
+            if (slot >= buffers.length) {
+                int newSize = buffers.length;
+                while (newSize <= slot)
+                    newSize *= 1.5;
+                ByteBuffer[] newBuffers = new ByteBuffer[newSize];
+                System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
+                buffers = newBuffers;
+            }
+            ByteBuffer buffer = buffers[slot];
+            if (buffer == null) {
+                int nbytes = bufSize * numSize;
+                buffer = buffers[slot] = onHeap ?
+                    ByteBuffer.allocate(nbytes) : ByteBuffer.allocateDirect(nbytes);
+            }
+            return buffer;
         }
     }
     
-    public static class OfByte extends OfThing<byte[]> {
-        
-        public OfByte() {
-            super(NUM_BUCKETS << 2);
+    public static class OfByte extends Base {
+        public OfByte(int bufferSize, boolean onHeap) {
+            super(bufferSize, 1, onHeap);
         }
-        
-        protected byte[] newBucket(int size) {
-            return new byte[size];
-        }
-        
         public byte get(int index) {
-            byte[] bucket = getBucket(index);
-            return bucket == null ? 0 : bucket[index % BUCKET_SIZE];
+            ByteBuffer bucket = getBuffer(index);
+            return bucket == null ? 0 : bucket.get((index % bufSize) * numSize);
         }
-        
         public void set(int index, byte value) {
-            getOrCreateBucket(index)[index % BUCKET_SIZE] = value;
+            getOrCreateBuffer(index).put((index % bufSize) * numSize, value);
         }
-        
         public void add(byte value) {
             set(cursor++, value);
         }
     }
     
-    public static class OfShort extends OfThing<short[]> {
-        
-        public OfShort() {
-            super(NUM_BUCKETS << 1);
+    public static class OfShort extends Base {
+        public OfShort(int bufferSize, boolean onHeap) {
+            super(bufferSize, 2, onHeap);
         }
-        
-        protected short[] newBucket(int size) {
-            return new short[size];
-        }
-        
         public short get(int index) {
-            short[] bucket = getBucket(index);
-            return bucket == null ? 0 : bucket[index % BUCKET_SIZE];
+            ByteBuffer bucket = getBuffer(index);
+            return bucket == null ? 0 : bucket.getShort((index % bufSize) * numSize);
         }
-        
         public void set(int index, short value) {
-            getOrCreateBucket(index)[index % BUCKET_SIZE] = value;
+            getOrCreateBuffer(index).putShort((index % bufSize) * numSize, value);
         }
-        
         public void add(short value) {
             set(cursor++, value);
         }
     }
     
-    public static class OfInt extends OfThing<IntBuffer> {
-        
-        public OfInt() {
-            super(NUM_BUCKETS);
+    public static class OfInt extends Base {
+        public OfInt(int bufferSize, boolean onHeap) {
+            super(bufferSize, 4, onHeap);
         }
-        
-        protected IntBuffer newBucket(int size) {
-            return ByteBuffer.allocateDirect(size * 4).asIntBuffer();
-        }
-        
         public int get(int index) {
-            IntBuffer bucket = getBucket(index);
-            return bucket == null ? 0 : bucket.get(index % BUCKET_SIZE);
+            ByteBuffer bucket = getBuffer(index);
+            return bucket == null ? 0 : bucket.getInt((index % bufSize) * numSize);
         }
-        
         public void set(int index, int value) {
-            getOrCreateBucket(index).put(index % BUCKET_SIZE, value);
+            getOrCreateBuffer(index).putInt((index % bufSize) * numSize, value);
         }
-        
         public void add(int value) {
             set(cursor++, value);
         }
     }
     
-    public static class OfLong extends OfThing<long[]> {
-
-        public OfLong() {
-            super(NUM_BUCKETS);
+    public static class OfLong extends Base {
+        public OfLong(int bufferSize, boolean onHeap) {
+            super(bufferSize, 8, onHeap);
         }
-        
-        protected long[] newBucket(int size) {
-            return new long[size];
-        }
-        
         public long get(int index) {
-            long[] bucket = getBucket(index);
-            return bucket == null ? 0 : bucket[index % BUCKET_SIZE];
+            ByteBuffer bucket = getBuffer(index);
+            return bucket == null ? 0 : bucket.getLong((index % bufSize) * numSize);
         }
-        
         public void set(int index, long value) {
-            getOrCreateBucket(index)[index % BUCKET_SIZE] = value;
+            getOrCreateBuffer(index).putLong((index % bufSize) * numSize, value);
         }
-        
         public void add(long value) {
-            set(cursor++, value);
-        }
-    }
-    
-    public static class OfType<T> extends OfThing<T[]>
-    {
-        private Class<?> klass;
-        
-        public OfType(Class<?> klass) {
-            super(NUM_BUCKETS);
-            this.klass = klass;
-        }
-        
-        @SuppressWarnings("unchecked")
-        protected T[] newBucket(int size) {
-            return (T[]) Array.newInstance(klass, size);
-        }
-        
-        public T get(int index) {
-            T[] bucket = getBucket(index);
-            return bucket == null ? null : bucket[index % BUCKET_SIZE];
-        }
-        
-        public void set(int index, T value) {
-            getOrCreateBucket(index)[index % BUCKET_SIZE] = value;
-        }
-        
-        public void add(T value) {
             set(cursor++, value);
         }
     }

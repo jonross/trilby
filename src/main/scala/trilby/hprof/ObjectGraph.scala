@@ -206,10 +206,10 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
 class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
     
     /** Synthetic object IDs at source of each edge */
-    private[this] val refsFrom = new ExpandoArray.OfInt()
+    private[this] val refsFrom = new ExpandoArray.OfInt(10240, false)
     
     /** Heap object IDs at destination of each edge */
-    private[this] val refsTo = new ExpandoArray.OfInt()
+    private[this] val refsTo = new ExpandoArray.OfInt(10240, false)
     
     /** # of unmappable references encountered */
     private var _numDead = 0
@@ -242,6 +242,13 @@ class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
             }
             i += 1
         }
+    }
+    
+    /** Clean up for GC */
+    
+    def destroy() {
+        refsFrom.destroy()
+        refsTo.destroy()
     }
     
     /* Return # of references */

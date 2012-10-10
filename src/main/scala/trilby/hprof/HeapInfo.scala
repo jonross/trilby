@@ -56,13 +56,13 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
     private[this] var objectIdMap = new IdMap3()
     
     /** Static references get special treatment after heap is read */
-    private[this] val staticRefs = new ExpandoArray.OfLong()
+    private[this] val staticRefs = new ExpandoArray.OfLong(1024, true)
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
     
     /** Temporary object, records object sizes as the heap is read */
-    private[this] var initialSizes = new ExpandoArray.OfInt()
+    private[this] var initialSizes = new ExpandoArray.OfInt(10240, false)
     
     /** After heap read, {@link #initialSizes} is optimized to this */
     private[this] var finalSizes: Counts.TwoByte = null
@@ -291,6 +291,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
             finalSizes.adjust(oid, initialSizes.get(oid))
         }
         
+        initialSizes.destroy()
         initialSizes = null // allow gc
         
         slices.par foreach { _.preBuild(objectIdMap) }

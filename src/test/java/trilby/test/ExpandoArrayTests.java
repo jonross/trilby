@@ -33,7 +33,7 @@ public class ExpandoArrayTests
     
     @Test
     public void testBytes() {
-        ExpandoArray.OfByte a = new ExpandoArray.OfByte();
+        ExpandoArray.OfByte a = new ExpandoArray.OfByte(1024, true);
         byte[] bytes = new byte[NUM_IDS];
         for (int i = 0; i < bytes.length; i++)
             a.add(bytes[i] = (byte) (random() & 0xFF));
@@ -43,7 +43,7 @@ public class ExpandoArrayTests
     
     @Test
     public void testShorts() {
-        ExpandoArray.OfShort a = new ExpandoArray.OfShort();
+        ExpandoArray.OfShort a = new ExpandoArray.OfShort(1024, true);
         short[] shorts = new short[NUM_IDS];
         for (int i = 0; i < shorts.length; i++)
             a.add(shorts[i] = (short) (random() & 0xFFFF));
@@ -53,12 +53,22 @@ public class ExpandoArrayTests
 
     @Test
     public void testInts() {
-        ExpandoArray.OfInt a = new ExpandoArray.OfInt();
+        ExpandoArray.OfInt a = new ExpandoArray.OfInt(1024, true);
         int[] ints =  new int[NUM_IDS];
         for (int i = 0; i < ints.length; i++)
             a.add(ints[i] = (int) (random() & 0xFFFFFFFF));
         for (int i = 0; i < ints.length; i++)
             assertEquals(ints[i], a.get(i));
+    }
+    
+    @Test
+    public void testLongs() {
+        ExpandoArray.OfLong a = new ExpandoArray.OfLong(1024, true);
+        long[] longs =  new long[NUM_IDS];
+        for (int i = 0; i < longs.length; i++)
+            a.add(longs[i] = (int) (random() & 0xFFFFFFFF));
+        for (int i = 0; i < longs.length; i++)
+            assertEquals(longs[i], a.get(i));
     }
     
     private long random() {

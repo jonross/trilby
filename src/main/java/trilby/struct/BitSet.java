@@ -64,7 +64,7 @@ public abstract class BitSet
     
     public static class Expandable extends BitSet
     {
-        private ExpandoArray.OfLong bits = new ExpandoArray.OfLong();
+        private ExpandoArray.OfLong bits = new ExpandoArray.OfLong(1024, true);
         
         public void set(int bit) {
             int i = bit >> SHIFT;
