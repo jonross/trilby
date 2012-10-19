@@ -32,8 +32,6 @@ import trilby.util.NumericHistogram
 import trilby.struct.IdMap3
 
 /**
- * Size: 2 edge sets, each containing a per-ID offset and array of edges, +
- * a dominator index.  12 bytes per node, 8 bytes per edge.  100M V+E = 2GB.
  */
 
 class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
@@ -44,23 +42,21 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
     /** The highest XID stored in this slice */
     private[this] val maxXid = {
         def find(oid: Int): Int = if (mySlice owns oid) oid else find(oid - 1)
-        mySlice mapOid find(maxOid)
+        mySlice shift find(maxOid)
     }
 
-    /** Inbound edges a.k.a. referrers */
+    /** Inbound edges */
     private[this] val in = {
         val builder = slices(sliceId).graphBuilder
-        def forEachReferrer(fn: Int => Unit) =
-            for (slice <- slices) slice.graphBuilder.forEachReferee(fn)
         def forEachReference(fn: (Int, Int) => Unit) =
-            for (slice <- slices) slice.graphBuilder.forEachBackwardReference(fn)
-        new Edges("in", forEachReferrer, forEachReference)
+            for (slice <- slices) slice.graphBuilder.forEachBackwardReference(fn, sliceId)
+        new Edges("in", forEachReference)
     }
     
-    /** Outbound edges a.k.a referees */
+    /** Outbound edges */
     private[this] val out = {
         val builder = slices(sliceId).graphBuilder
-        new Edges("out", builder.forEachReferrer, builder.forEachForwardReference)
+        new Edges("out", builder.forEachForwardReference(_, -1))
     }
     
     def forEachReferrer(oid: Int, fn: Int => Unit) =
@@ -68,6 +64,9 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
         
     def forEachReferee(oid: Int, fn: Int => Unit) =
         out.forEachEdgeFrom(oid, fn)
+        
+    def inCounts = in.edgeCounts
+    def outCounts = out.edgeCounts
     
     /**
      * Represents a set of outbound edges.  (Also used for inbound object
@@ -76,8 +75,6 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
     
     class Edges(/** "in" or "out", for debugging */
                 dir: String, 
-                /** traverse referrers */
-                forEachReferrer: (Int => Unit) => Unit,
                 /** traverse references */
                 forEachReference: ((Int, Int) => Unit) => Unit
                 )
@@ -99,37 +96,26 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
         
         /** Has 1s at indices for which edges[xid] begins an edge list */
         private[this] var boundaries: BitSet.Basic = null
+        
+        /** Tracks edge counts */
+        private[this] val histo = new NumericHistogram(11)
             
         {
             // Can't calculate numEdges in advance because for in edges, the count
             // we own varies by slice.
             
+            val in = dir == "in"
             printf("Generating degree counts\n")
             
-            forEachReferrer(oid => {
-                val xid = mySlice mapOid oid
+            forEachReference((fromOid, toOid) => {
+                val xid = mySlice shift fromOid
                 degrees.adjust(xid, 1)
                 numEdges += 1
             })
             
-            edges = new Array[Int](numEdges+1)
-            boundaries = new BitSet.Basic(numEdges+1)
-            
-            // Summarize degree counts.
-            
-            printf("Frequency of %s-degree across %d nodes\n", dir, maxXid);
-            
-            val histo = new NumericHistogram(11)
             var i = 1
-            
             while (i <= maxXid) {
                 histo.add(degrees get i)
-                i += 1
-            }
-            
-            i = 0
-            while (i <= 10) {
-                printf(" %2d%s %10d\n", i, if (i==10) "+" else " ", histo(i))
                 i += 1
             }
             
@@ -138,7 +124,10 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
             // them out while iterating than to elide them now.  Also at some point we
             // may want them.
             
-            System.out.println("Finding edge offsets");
+            edges = new Array[Int](numEdges+1)
+            boundaries = new BitSet.Basic(numEdges+1)
+            
+            printf("Finding edge offsets\n")
 
             var xid = 0
             while (xid <= maxXid) {
@@ -162,12 +151,15 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
             // Now that we have the offsets we can fill the edge array.
             
             forEachReference((fromOid, toOid) => {
-                val fromXid = mySlice mapOid fromOid
+                // printf("%s link from %d to %d\n", dir, fromOid, toOid)
+                val fromXid = mySlice shift fromOid
                 val offset = offsets(fromXid)
                 val delta = degrees.adjust(fromXid, -1)
                 edges(offset + delta) = toOid
             })
         }
+        
+        def edgeCounts = histo
         
         /**
          * Given an object ID, iterate the object IDs to which it is connected.
@@ -178,7 +170,7 @@ class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
             if (oid == 0)
                 return // filter out unmappable HIDs noted above 
                 
-            var i = offsets(mySlice.mapOid(oid))
+            var i = offsets(mySlice shift oid)
             if (i == 0) {
                 return
             }
@@ -257,37 +249,18 @@ class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
     /** Return the number of unmappable references */
     def numDead = _numDead
     
-    def forEachReferrer(fn: Int => Unit) =
-        for (i <- (0 until refsFrom.size))
-            fn(refsFrom.get(i))
-    
-    def forEachForwardReference(fn: (Int, Int) => Unit) =
-        for (i <- (0 until refsFrom.size))
-            fn(refsFrom.get(i), refsTo.get(i))
-    
-    def forEachReferee(fn: Int => Unit) = {
-        // This oughtn't be faster than @inlined Range.foreach, but HPROF says it is.
-        var i = 0
-        val end = refsTo.size
-        while (i < end) {
-            val to = refsTo.get(i)
-            if (to % numSlices == sliceId) {
-                fn(to)
-            }
-            i += 1
+    def forEachForwardReference(fn: (Int, Int) => Unit, inSlice: Int = -1) =
+        for (i <- (0 until refsFrom.size)) {
+            val from = refsFrom.get(i)
+            if (inSlice == -1 || from % numSlices == inSlice)
+                fn(from, refsTo.get(i))
         }
-    }
-        
-    def forEachBackwardReference(fn: (Int, Int) => Unit) {
-        // This oughtn't be faster than @inlined Range.foreach, but HPROF says it is.
-        var i = 0
-        val end = refsTo.size
-        while (i < end) {
+    
+    def forEachBackwardReference(fn: (Int, Int) => Unit, inSlice: Int = -1) {
+        for (i <- (0 until refsFrom.size)) {
             val to = refsTo.get(i)
-            if (to % numSlices == sliceId) {
+            if (inSlice == -1 || to % numSlices == inSlice)
                 fn(to, refsFrom.get(i))
-            }
-            i += 1
         }
     }
 }

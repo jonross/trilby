@@ -32,13 +32,14 @@ import trilby.util.Oddments._
 import java.util.Date
 import java.util.HashMap
 import gnu.trove.map.hash.TLongIntHashMap
+import trilby.util.NumericHistogram
 
 class HeapInfo(val idSize: Int, val fileDate: Date) {
     
-    private[this] val numSlices = 1
+    private[this] val numSlices = 4
     
     /** True if 64-bit VM */
-    val longIds = idSize == 8
+    val longIds = idSize == 1
     
     /** Subcontract out class information */
     val classes = new ClassInfo()
@@ -303,6 +304,18 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
         val m = maxId
         _maxId = () => m
         objectIdMap = null // allow gc
+        
+        // Show details on in/out-degree frequency
+        
+        def showCounts(dir: String, counts: NumericHistogram) {
+            printf("Frequency of %s-degree across %d nodes\n", dir, maxId)
+            for (val i <- 0 to 10)
+                printf(" %2d%s %10d\n", i, if (i==10) "+" else " ", counts(i))
+        }
+        
+        // (slices map (_.inCounts) toSeq) foreach (showCounts("xin", _))
+        showCounts("in", slices map (_.inCounts) reduce (_ + _))
+        showCounts("out", slices map (_.outCounts) reduce (_ + _))
     }
     
     // TODO: comments
