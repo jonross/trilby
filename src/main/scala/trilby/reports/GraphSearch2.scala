@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 
 package trilby.reports
 
-import trilby.hprof.HeapInfo
+import trilby.hprof.Heap
 import trilby.query.GraphQuery
 import trilby.util.ObjectSet
 import trilby.struct.IntStack
@@ -31,7 +31,7 @@ import trilby.query.Target
 import gnu.trove.map.hash.TIntIntHashMap
 import gnu.trove.map.hash.TIntByteHashMap
 
-class GraphSearch2(heap: HeapInfo, query: GraphQuery) {
+class GraphSearch2(heap: Heap, query: GraphQuery) {
     
     // Rest of targets determine where to go
     private[this] val finder = buildFinders(query.finder)

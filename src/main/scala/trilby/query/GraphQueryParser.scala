@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +25,9 @@ package trilby.query
 import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.combinator.RegexParsers
 
-import trilby.hprof.HeapInfo
+import trilby.hprof.Heap
 
-class GraphQueryParser(heap: HeapInfo) extends RegexParsers
+class GraphQueryParser(heap: Heap) extends RegexParsers
 {
     // matches e.g. "java.lang.Object", "int[][]", "com.foo.*"
 

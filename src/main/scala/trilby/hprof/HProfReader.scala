@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ import trilby.util.Oddments._
 
 class HProfReader (data: MappedHeapData) {
     
-    private[this] var heap: HeapInfo = null
+    private[this] var heap: Heap = null
     private[this] var numRecords = 0
     private[this] var buf = new Array[Byte](1000)
     
@@ -80,7 +80,7 @@ class HProfReader (data: MappedHeapData) {
 
         val time = data.readInt().asInstanceOf[Long] << 32 + data.readInt()
 
-        heap = new HeapInfo(Ref.size, new Date(time))
+        heap = new Heap(Ref.size, new Date(time))
 
         while (! data.eof) {
             data.demand(9)

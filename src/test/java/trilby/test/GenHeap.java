@@ -9,7 +9,7 @@ public class GenHeap
     private Map<Integer,Object> m = Maps.newHashMap();
     
     {
-        class Thing1 {int x;};
+        class Thing1 {@SuppressWarnings("unused") int x;};
         
         for (int i = 0; i < 10; i++)
             m.put(i, new Thing1());

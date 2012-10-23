@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 
 package trilby.query
 
-import trilby.hprof.HeapInfo
+import trilby.hprof.Heap
 import trilby.reports.ClassHistogram
 import trilby.reports.GraphSearch2
 import trilby.util.Oddments._
@@ -38,7 +38,7 @@ trait Renderable {
     def +(that: T): T
 }
 
-class GraphQuery(heap: HeapInfo, funName: String, funArgs: List[String],
+class GraphQuery(heap: Heap, funName: String, funArgs: List[String],
                  val finder: List[Target]) extends (() => Unit) {
     
     private val functions: Map[String,(Int, () => QueryFunction with Renderable)] = 

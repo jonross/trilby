@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ package trilby.reports
 import java.io.PrintWriter
 import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
-import trilby.hprof.HeapInfo
+import trilby.hprof.Heap
 import trilby.query.QueryFunction
 import trilby.util.ObjectSet
 import trilby.query.Renderable
@@ -35,7 +35,7 @@ import trilby.query.Renderable
  * the total byte count per class.
  */
 
-class ClassHistogram (heap: HeapInfo, showIds: Boolean = false) 
+class ClassHistogram (heap: Heap, showIds: Boolean = false) 
     extends QueryFunction with Renderable
 {
     class Counts(val classDef: ClassDef, var count: Int = 0, var nbytes: Long = 0L) { }
@@ -65,7 +65,8 @@ class ClassHistogram (heap: HeapInfo, showIds: Boolean = false)
         
     def render(out: PrintWriter) {
         
-        val slots = counts.values.toList sortWith { (a,b) => 
+        val values = counts.values(new Array[Counts](0))
+        val slots = values.toList sortWith { (a,b) =>
             val delta = a.nbytes - b.nbytes
             if (delta > 0) true
             else if (delta < 0) false

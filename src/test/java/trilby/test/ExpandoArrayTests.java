@@ -23,12 +23,16 @@
 package trilby.test;
 
 import static org.junit.Assert.*;
+
+import java.util.Random;
+
 import trilby.struct.ExpandoArray;
 
 import org.junit.Test;
 
 public class ExpandoArrayTests
 {
+    private final static Random random = new Random();
     private final static int NUM_IDS = (int) 1e6;
     
     @Test
@@ -36,7 +40,7 @@ public class ExpandoArrayTests
         ExpandoArray.OfByte a = new ExpandoArray.OfByte(1024, true);
         byte[] bytes = new byte[NUM_IDS];
         for (int i = 0; i < bytes.length; i++)
-            a.add(bytes[i] = (byte) (random() & 0xFF));
+            a.add(bytes[i] = (byte) (random.nextInt() & 0xFF));
         for (int i = 0; i < bytes.length; i++)
             assertEquals(bytes[i], a.get(i));
     }
@@ -46,7 +50,7 @@ public class ExpandoArrayTests
         ExpandoArray.OfShort a = new ExpandoArray.OfShort(1024, true);
         short[] shorts = new short[NUM_IDS];
         for (int i = 0; i < shorts.length; i++)
-            a.add(shorts[i] = (short) (random() & 0xFFFF));
+            a.add(shorts[i] = (short) (random.nextInt() & 0xFFFF));
         for (int i = 0; i < shorts.length; i++)
             assertEquals(shorts[i], a.get(i));
     }
@@ -56,7 +60,7 @@ public class ExpandoArrayTests
         ExpandoArray.OfInt a = new ExpandoArray.OfInt(1024, true);
         int[] ints =  new int[NUM_IDS];
         for (int i = 0; i < ints.length; i++)
-            a.add(ints[i] = (int) (random() & 0xFFFFFFFF));
+            a.add(ints[i] = random.nextInt());
         for (int i = 0; i < ints.length; i++)
             assertEquals(ints[i], a.get(i));
     }
@@ -66,12 +70,8 @@ public class ExpandoArrayTests
         ExpandoArray.OfLong a = new ExpandoArray.OfLong(1024, true);
         long[] longs =  new long[NUM_IDS];
         for (int i = 0; i < longs.length; i++)
-            a.add(longs[i] = (int) (random() & 0xFFFFFFFF));
+            a.add(longs[i] = random.nextLong());
         for (int i = 0; i < longs.length; i++)
             assertEquals(longs[i], a.get(i));
-    }
-    
-    private long random() {
-        return (long) (Math.random() * Long.MAX_VALUE);
     }
 }

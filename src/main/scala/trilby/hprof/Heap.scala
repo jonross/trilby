@@ -1,4 +1,4 @@
-/* Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+/* Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +34,9 @@ import java.util.HashMap
 import gnu.trove.map.hash.TLongIntHashMap
 import trilby.util.NumericHistogram
 
-class HeapInfo(val idSize: Int, val fileDate: Date) {
+class Heap(val idSize: Int, val fileDate: Date) {
     
+    import Heap.Slice
     private[this] val numSlices = 4
     
     /** True if 64-bit VM */
@@ -45,7 +46,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
     val classes = new ClassInfo()
     
     /** Worker data slices */
-    val slices = (0 until numSlices).map(new HeapSlice(this, _, numSlices)).toArray
+    val slices = (0 until numSlices).map(new Slice(this, _, numSlices)).toArray
 
     /** Maps heap IDs to UTF-8 strings (field names, class names etc.) */
     private[this] val heapNamesById = new TLongObjectHashMap[String](100000)
@@ -69,7 +70,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
     private[this] var finalSizes: Counts.TwoByte = null
     
     /** TODO: optimize this */
-    private[this] var iniOffsets = new Sequence.OfMonotonicLong();
+    private[this] val offsets = new ExpandoArray.OfLong(10240, false)
     
     /** Highest HID seen by addInstance or addClassDef */
     private[this] var highestHid = 0L
@@ -78,7 +79,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
     private[this] var highestOffset = 0L
     
     /**
-     * Return the HeapSlice associated with an object ID
+     * Return the Heap.Slice associated with an object ID
      */
     
     def apply(id: Int) = slices(id % numSlices)
@@ -174,7 +175,7 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
         val oid = objectIdMap.map(id, true)
         classes.addObject(classDef, oid)
         initialSizes.set(oid, size)
-        iniOffsets.add(offset)
+        // offsets.add(offset)
         oid
     }
     
@@ -336,4 +337,50 @@ class HeapInfo(val idSize: Int, val fileDate: Date) {
     def maxId = _maxId()
     
     def elideTypes(types: String) { }
+}
+
+object Heap {
+    
+    class Slice(heap: Heap, sliceId: Int, numSlices: Int) {
+    
+        def owns(oid: Int) = oid % numSlices == sliceId
+    
+        val shift = (oid: Int) => (oid - sliceId) / numSlices
+        val unshift = (xid: Int) => xid * numSlices + sliceId
+        
+        /** Temporary object, records references as the heap is read */
+        private[hprof] var graphBuilder = 
+            new ObjectGraphBuilder(sliceId, numSlices)
+    
+        /** After heap read, {@link #graphBuilder} builds this */
+        private[this] var graph: ObjectGraph = null
+    
+        def addReference(fromOid: Int, toHid: Long) =
+            graphBuilder.addRef(fromOid, toHid)
+    
+        def forEachReferrer(id: Int, fn: Int => Unit) = 
+            graph.forEachReferrer(id, fn)
+    
+        def forEachReferee(id: Int, fn: Int => Unit) = 
+            graph.forEachReferee(id, fn)
+     
+        def inCounts = graph.inCounts
+        def outCounts = graph.outCounts
+        
+        def preBuild(idMap: IdMap3) = {
+            println("Remapping heap IDs")
+            graphBuilder.mapHeapIds(idMap)
+        }
+    
+        private[hprof] def build(maxId: Int) {
+            System.out.println("Building graph")
+            graph = new ObjectGraph(maxId, heap.slices, sliceId)
+            printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
+        }
+        
+        def postBuild() {
+            graphBuilder.destroy()
+            graphBuilder = null // allow GC
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,12 @@ import trilby.struct.BitSet
 import trilby.struct.ExpandoArray
 import trilby.util.NumericHistogram
 import trilby.struct.IdMap3
+import trilby.hprof.Heap.Slice
 
 /**
  */
 
-class ObjectGraph(val maxOid: Int, slices: Array[HeapSlice], sliceId: Int) {
+class ObjectGraph(val maxOid: Int, slices: Array[Slice], sliceId: Int) {
     
     /** Slice containing this graph section */
     private[this] val mySlice = slices(sliceId)

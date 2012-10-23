@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ import java.util.Date
 import trilby.util._
 import trilby.util.Oddments._
 
-class SegmentReader (heap: HeapInfo, data: MappedHeapData, length: Long) {
+class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
     private[this] var numRecords = 0
     private[this] var buf = new Array[Byte](1000)
