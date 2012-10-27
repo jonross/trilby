@@ -1,0 +1,139 @@
+/*
+ * Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package trilby.test;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
+import trilby.struct.IntGraph;
+import trilby.struct.ScaleDom;
+import trilby.struct.ScaleDom.BasicBlock;
+import trilby.struct.ScaleDom.Graph;
+import trilby.struct.Unboxed.IntIterator;
+
+public class GraphTests
+{
+    private final static Integer[][] edges_1 = {
+        ints(1, 2),
+        ints(2, 3, 6),
+        ints(3, 5),
+        ints(4),
+        ints(5, 4),
+        ints(6, 5)
+    };
+    
+    private final static Integer[][] edges_2 = {
+        ints(1, 2, 19, 23),
+        ints(2, 3, 6),
+        ints(3, 5),
+        ints(4),
+        ints(5, 4),
+        ints(6, 5, 7),
+        ints(7, 8, 9, 10),
+        ints(8, 6, 16),
+        ints(9, 18),
+        ints(10, 11, 14, 15),
+        ints(11, 12, 13),
+        ints(12),
+        ints(13),
+        ints(14),
+        ints(15),
+        ints(16, 17),
+        ints(17, 18),
+        ints(18),
+        ints(19, 20, 21, 22),
+        ints(20),
+        ints(22),
+        ints(22),
+        ints(23, 24),
+        ints(24, 25, 26),
+        ints(25, 26),
+        ints(26, 23)
+    };
+    
+    private final static int doms_2[] = {
+        -1,
+        0,
+        1,
+        2,
+        5,
+        2,      // 5
+        2,
+        6,
+        7,
+        7,
+        7,      // 10
+        10,
+        11,
+        11,
+        10,
+        10,     // 15
+        8,
+        16,
+        7,
+        1,
+        19,     // 20
+        19,
+        19,
+        1,
+        23,
+        24,      // 25
+        24
+    };
+    
+    @Test
+    public void testIt() {
+        testIt(edges_1, null);
+        testIt(edges_2, doms_2);
+    }
+    
+    private void testIt(Integer[][] edges, int[] doms) {
+        
+        IntGraph g = new IntGraph(true);
+        for (Integer[] e: edges)
+            for (int i = 1; i < e.length; i++)
+                g.edge(e[0], e[i]);
+        
+        for (Integer[] e: edges) {
+            int i = 1, next;
+            IntIterator it = g.outs(e[0]);
+            while ((next = it.next()) > 0) {
+                // System.out.printf("%d -> %d\n", e[0], next);
+                assertEquals((int) e[i++], next);
+            }
+            assertEquals(i, e.length);
+        }
+        
+        if (doms == null)
+            return;
+        
+        int[] idom = g.dom();
+        for (int i = 1; i < doms.length; i++)
+            assertEquals(doms[i], idom[i]);
+    }
+    
+    private static Integer[] ints(Integer...ints) {
+        return ints;
+    }
+}

@@ -22,7 +22,6 @@
 
 package trilby.util
 import com.google.common.base.Splitter
-import trilby.struct.Unboxed.IntIterator
 import java.io.PrintStream
 
 object Oddments {
@@ -104,7 +103,4 @@ object Oddments {
     private val primarray = """(\[+)([ZCFDBSIJ])""".r
     private val tagmap = Splitter.on(',').withKeyValueSeparator("=").
         split("Z=boolean,C=char,F=float,D=double,B=byte,S=short,I=int,J=long")
-        
-    def forMulti(iters: List[IntIterator], fn: Int => Unit) =
-        for (iter <- iters) while (iter hasNext) fn(iter next)
 }

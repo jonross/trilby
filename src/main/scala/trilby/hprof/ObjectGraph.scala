@@ -24,18 +24,16 @@ package trilby.hprof
 
 import trilby.util.Oddments._
 import trilby.struct.Unboxed
-import trilby.struct.Unboxed.IntIterator
 import trilby.struct.Counts
 import trilby.struct.BitSet
 import trilby.struct.ExpandoArray
 import trilby.util.NumericHistogram
 import trilby.struct.IdMap3
-import trilby.hprof.Heap.Slice
 
 /**
  */
 
-class ObjectGraph(val maxOid: Int, slices: Array[Slice], sliceId: Int) {
+class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
     
     /** Slice containing this graph section */
     private[this] val mySlice = slices(sliceId)

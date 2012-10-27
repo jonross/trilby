@@ -29,39 +29,15 @@ package trilby.struct;
 
 public class Unboxed
 {
-    public static interface AnyIterator {
-        boolean hasNext();
-    }
-    
-    public static interface IntIterator extends AnyIterator {
+    public interface IntIterator {
         int next();
-    }
-    
-    public static interface LongIterator extends AnyIterator {
-        long next();
-    }
-    
-    public static interface IntIterable {
-        IntIterator ints();
-    }
-    
-    public static interface LongIterable {
-        LongIterator longs();
     }
     
     public interface IntIntFn {
         int apply(int x);
     }
     
-    public interface IntVoidFn {
-        void apply(int x);
-    }
-    
     public interface IntIntVoidFn {
         void apply(int x, int y);
-    }
-
-    public interface LongIntFn {
-        int apply(long x);
     }
 }

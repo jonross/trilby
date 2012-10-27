@@ -26,8 +26,6 @@ import static org.junit.Assert.assertEquals;
 import trilby.struct.BitSet;
 import trilby.struct.Counts;
 import trilby.struct.MonotonicSequenceMap;
-import trilby.struct.Sequence;
-import trilby.struct.Unboxed.LongIterator;
 
 import java.util.Random;
 
@@ -61,37 +59,6 @@ public class BasicStructureTests
         }
         for (int id = 0; id < NUM_IDS; id++)
             assertEquals(actuals[id], counts.get(id));
-    }
-    
-    @Test
-    public void testMonotonicLongSequence() {
-        Sequence.OfMonotonicLong seq = new Sequence.OfMonotonicLong();
-        long[] values = new long[(int) 1e7];
-        long value = 0;
-        
-        for (int i = 0; i < values.length; i++) {
-            double key = Math.random();
-            if (key < 0.01)
-                value += (long) (100000000 * Math.random());
-            else if (key < .1)
-                value += (long) (1000000 * Math.random());
-            else
-                value += (long) (1000 * Math.random());
-            values[i] = value;
-            seq.add(value);
-        }
-        
-        int j = 0;
-        LongIterator iter = seq.iterator();
-        while (iter.hasNext())
-            assertEquals(values[j++], iter.next());
-        
-        int[] s = seq.getStats();
-        System.out.printf("%d bytes %d shorts %d ints\n", s[0], s[1], s[2]);
-        
-        int used = (s[0] + s[1]*2 + s[2]*4) / 1048576;
-        int saved = (values.length * 8 / 1048576) - used;
-        System.out.printf("memory (w/o overhead) = %dMB, saved %dMB\n", used, saved); 
     }
     
     @Test

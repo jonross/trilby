@@ -26,7 +26,6 @@ import gnu.trove.map.hash.TLongObjectHashMap
 import gnu.trove.map.hash.TLongLongHashMap
 import trilby.struct.Counts
 import trilby.struct.ExpandoArray
-import trilby.struct.Sequence
 import trilby.struct.IdMap3
 import trilby.util.Oddments._
 import java.util.Date
