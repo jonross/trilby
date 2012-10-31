@@ -22,8 +22,6 @@
 
 package trilby.struct;
 
-import trilby.struct.Unboxed.IntIterator;
-
 public class IntGraph
 {
     private IntLists in, out;
@@ -43,12 +41,20 @@ public class IntGraph
             max = to;
     }
     
-    public IntIterator ins(int v) {
-        return in.iterate(v);
+    public long walkInEdges(int v) {
+        return in.walk(v);
     }
     
-    public IntIterator outs(int v) {
-        return out.iterate(v);
+    public long nextInEdge(long cursor) {
+        return in.next(cursor);
+    }
+    
+    public long walkOutEdges(int v) {
+        return out.walk(v);
+    }
+    
+    public long nextOutEdge(long cursor) {
+        return out.next(cursor);
     }
     
     public int[] dom() {
@@ -92,12 +98,9 @@ public class IntGraph
                 int p = parent[w];
                 
                 // step 2
-                // IntIterator it = ins(rev[p]); bug?
-                IntIterator it = ins(rev[w]);
-                for (int _v = it.next(); _v > 0; _v = it.next()) {
-                    int v = ord[_v];
+                for (long cur = in.walk(rev[w]); cur != 0; cur = in.next(cur)) {
+                    int v = ord[(int) (cur & 0xFFFFFFFF)];
                     int u = eval(v);
-                    // System.out.printf("%d pred %d parent %d\n", rev[v], rev[w], rev[p]);
                     if (semi[w] > semi[u])
                         semi[w] = semi[u];
                     buck.add(semi[w], w);
@@ -105,10 +108,12 @@ public class IntGraph
                 }
                 
                 // step 3
-                it = buck.iterate(p);
+                for (long cur = buck.walk(p); cur != 0; cur = buck.next(cur)) {
+                    int v = (int) (cur & 0xFFFFFFFF);
+                }
+                IntIterator it = buck.iterate(p);
                 for (int v = it.next(); v > 0; v = it.next()) {
                     int u = eval(v);
-                    // idom[v] = semi[u] < p ? u : p; bug?
                     idom[v] = semi[u] < semi[v] ? u : p;
                 }
                 buck.clear(p);
@@ -130,16 +135,13 @@ public class IntGraph
             if (ord[_v] == 0) {
                 ord[_v] = num++;
                 parent[ord[_v]] = ord[_p];
-                // System.out.printf("parent[%d] = %d\n", _v, _p);
                 rev[ord[_v]] = _v;
-                IntIterator it = outs(_v);
-                for (int _u = it.next(); _u > 0; _u = it.next())
-                    dfs(_u, _v);
+                for (long cur = out.walk(_v); cur != 0; cur = out.next(cur))
+                    dfs((int) (cur & 0xFFFFFFFF), _v);
             }
         }
         
         private void link(int v, int w) {
-            // System.out.printf("ancestor[%d] = %d\n", rev[w], rev[v]);
             ancestor[w] = v;
         }
 
@@ -155,12 +157,10 @@ public class IntGraph
             if (ancestor[a] == 0) {
                 return;
             }
-            // System.out.printf("compress %d, ancestor %d\n", rev[v], rev[a]);
             compress(a);
             if (semi[best[v]] > semi[best[a]]) {
                 best[v] = best[a];
             }
-            // System.out.printf("ancestor[%d] = %d\n", rev[v], rev[a]);
             ancestor[v] = ancestor[a];
         }
     }

@@ -22,8 +22,6 @@
 
 package trilby.struct;
 
-import trilby.struct.Unboxed.IntIterator;
-
 /**
  * Manage a related group of linked lists of unboxed integers, on or off the heap.
  * Built on {@link ExpandoArray}.
@@ -84,37 +82,50 @@ public class IntLists {
      */
     
     public void clear(int listId) {
+        
         if (listId < 0 || listId >= firsts.size()) {
             throw new IllegalArgumentException("Invalid list ID: " + listId);
         }
+        
         for (int cons = firsts.get(listId); cons != 0; ) {
             int next = chains.get(cons+1);
             free(cons);
             cons = next;
         }
+        
         firsts.set(listId, 0);
         lasts.set(listId, 0);
     }
     
     /**
-     * Return a (non-thread-safe) iterator over the values in a list.
-     * @param listId Non-negative numeric list ID
+     * Iterate a list, without touching the heap.  Idiom:
+     * <pre>
+     * for (int cursor = l.walk(id); cursor != 0; cursor = l.next(cursor)) {
+     *     int value = (int) (cursor & 0xFFFFFFFF);
+     *     ...
+     * </pre>
      */
     
-    public IntIterator iterate(final int listId) {
-        if (listId < 0 || listId >= firsts.size()) {
+    public long walk(final int listId) {
+        if (listId < 0 || listId >= firsts.size())
             throw new IllegalArgumentException("Invalid list ID: " + listId);
-        }
-        return new IntIterator() {
-            private int cons = firsts.get(listId);
-            public int next() {
-                if (cons == 0)
-                    return end;
-                int value = chains.get(cons);
-                cons = chains.get(cons+1);
-                return value;
-            }
-        };
+        return cursor(firsts.get(listId));
+    }
+    
+    /**
+     * @see #walk(int)
+     */
+    
+    public long next(long cursor) {
+        int cons = (int) ((cursor >>> 32) & 0xFFFFFFFFL);
+        return cursor(chains.get(cons+1));
+    }
+    
+    private long cursor(int cons) {
+        if (cons == 0)
+            return 0L;
+        int value = chains.get(cons);
+        return ((long) cons) << 32 | value;
     }
     
     private int alloc() {

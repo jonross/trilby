@@ -27,10 +27,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import trilby.struct.IntGraph;
-import trilby.struct.ScaleDom;
-import trilby.struct.ScaleDom.BasicBlock;
-import trilby.struct.ScaleDom.Graph;
-import trilby.struct.Unboxed.IntIterator;
 
 public class GraphTests
 {
@@ -116,12 +112,9 @@ public class GraphTests
                 g.edge(e[0], e[i]);
         
         for (Integer[] e: edges) {
-            int i = 1, next;
-            IntIterator it = g.outs(e[0]);
-            while ((next = it.next()) > 0) {
-                // System.out.printf("%d -> %d\n", e[0], next);
-                assertEquals((int) e[i++], next);
-            }
+            int i = 1;
+            for (long cur = g.walkOutEdges(e[0]); cur != 0; cur = g.nextOutEdge(cur))
+                assertEquals((int) e[i++], (int) (cur & 0xFFFFFFFF));
             assertEquals(i, e.length);
         }
         
