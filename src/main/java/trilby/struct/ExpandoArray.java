@@ -74,7 +74,7 @@ public class ExpandoArray
             }
         }
         
-        // Method from
+// Method from
         // http://stackoverflow.com/questions/1854398/how-to-garbage-collect-a-direct-buffer-java
         // This of course is Sun-specific, for now.
         
@@ -166,12 +166,22 @@ public class ExpandoArray
         public OfInt(int bufferSize, boolean onHeap) {
             super(bufferSize, 4, onHeap);
         }
+        public OfInt(Settings settings) {
+            this(settings.blockSize(), settings.onHeap());
+        }
         public int get(int index) {
             ByteBuffer bucket = getBuffer(index);
             return bucket == null ? 0 : bucket.getInt((index % bufSize) * numSize);
         }
         public void set(int index, int value) {
             getOrCreateBuffer(index).putInt((index % bufSize) * numSize, value);
+        }
+        public int adjust(int index, int delta) {
+            ByteBuffer buf = getOrCreateBuffer(index);
+            int pos = (index % bufSize) * numSize;
+            int value = buf.getInt(pos) + delta;
+            buf.putInt(pos, value);
+            return value;
         }
         public void add(int value) {
             set(cursor++, value);

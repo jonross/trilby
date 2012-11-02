@@ -29,13 +29,10 @@ package trilby.struct;
 
 public class IntLists {
     
-    private final static int END = Integer.MIN_VALUE;
-    
     private final ExpandoArray.OfInt firsts;
     private final ExpandoArray.OfInt lasts;
     private final ExpandoArray.OfInt chains;
     private int freelist = 0;
-    private final int end = END;
     
     public IntLists(boolean onHeap) {
         firsts = new ExpandoArray.OfInt(1000, onHeap);
@@ -44,10 +41,6 @@ public class IntLists {
         // 0 means nil so the first cons is not used
         chains.add(0);
         chains.add(0);
-    }
-    
-    public int end() {
-        return end;
     }
     
     /**
@@ -95,6 +88,21 @@ public class IntLists {
         
         firsts.set(listId, 0);
         lasts.set(listId, 0);
+    }
+    
+    /**
+     * Return the head of a list, or the indicated alternative if none.
+     * @param listId Non-negative numeric list ID
+     */
+    
+    public int head(int listId, int orElse) {
+        
+        if (listId < 0 || listId >= firsts.size()) {
+            throw new IllegalArgumentException("Invalid list ID: " + listId);
+        }
+        
+        int cons = firsts.get(listId);
+        return cons > 0 ? chains.get(cons) : orElse;
     }
     
     /**

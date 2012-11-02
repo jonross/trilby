@@ -26,7 +26,9 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import trilby.struct.Dominators;
 import trilby.struct.IntGraph;
+import trilby.struct.MutableIntGraph;
 
 public class GraphTests
 {
@@ -100,16 +102,19 @@ public class GraphTests
     
     @Test
     public void testIt() {
-        testIt(edges_1, null);
-        testIt(edges_2, doms_2);
+        testIt(edges_1, makeMutableGraph(edges_1), null);
+        testIt(edges_2, makeMutableGraph(edges_2), doms_2);
     }
     
-    private void testIt(Integer[][] edges, int[] doms) {
-        
-        IntGraph g = new IntGraph(true);
+    private IntGraph makeMutableGraph(Integer[][] edges) {
+        MutableIntGraph g = new MutableIntGraph(true);
         for (Integer[] e: edges)
             for (int i = 1; i < e.length; i++)
                 g.edge(e[0], e[i]);
+        return g;
+    }
+    
+    private void testIt(Integer[][] edges, IntGraph g, int[] doms) {
         
         for (Integer[] e: edges) {
             int i = 1;
@@ -121,7 +126,7 @@ public class GraphTests
         if (doms == null)
             return;
         
-        int[] idom = g.dom();
+        int[] idom = new Dominators(g).get();
         for (int i = 1; i < doms.length; i++)
             assertEquals(doms[i], idom[i]);
     }

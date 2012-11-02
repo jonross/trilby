@@ -22,16 +22,44 @@
 
 package trilby.struct;
 
-public interface IntGraph {
+public class MutableIntGraph implements IntGraph
+{
+    private IntLists in, out;
+    private int max = 0;
+    
+    public MutableIntGraph(boolean onHeap) {
+        in = new IntLists(onHeap);
+        out = new IntLists(onHeap);
+    }
 
-    int maxNode();
+    public void edge(int from, int to) {
+        if (from == 0 || to == 0)
+            throw new IllegalArgumentException("Graph node IDs must be positive integers");
+        out.add(from, to);
+        in.add(to, from);
+        if (from > max)
+            max = from;
+        if (to > max)
+            max = to;
+    }
     
-    long walkInEdges(int v);
-   
-    long nextInEdge(long cursor);
+    public int maxNode() {
+        return max;
+    }
     
-    long walkOutEdges(int v);
+    public long walkInEdges(int v) {
+        return in.walk(v);
+    }
     
-    long nextOutEdge(long cursor);
+    public long nextInEdge(long cursor) {
+        return in.next(cursor);
+    }
     
+    public long walkOutEdges(int v) {
+        return out.walk(v);
+    }
+    
+    public long nextOutEdge(long cursor) {
+        return out.next(cursor);
+    }
 }
