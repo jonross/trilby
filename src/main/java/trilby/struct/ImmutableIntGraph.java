@@ -24,7 +24,7 @@ package trilby.struct;
 
 import trilby.struct.Unboxed.IntIntVoidFn;
 
-public class ImmutableIntGraph
+public class ImmutableIntGraph implements IntGraph
 {
     private Edges in, out;
         
@@ -107,5 +107,25 @@ public class ImmutableIntGraph
         {
             
         }
+    }
+
+    public int maxNode() {
+        return maxId;
+    }
+
+    public long walkInEdges(int v) {
+        return 0;
+    }
+
+    public long nextInEdge(long cursor) {
+        return 0;
+    }
+
+    public long walkOutEdges(int v) {
+        return 0;
+    }
+
+    public long nextOutEdge(long cursor) {
+        return 0;
     }
 }

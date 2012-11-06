@@ -27,8 +27,12 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import trilby.struct.Dominators;
+import trilby.struct.ImmutableIntGraph;
+import trilby.struct.ImmutableIntGraph.Data;
 import trilby.struct.IntGraph;
 import trilby.struct.MutableIntGraph;
+import trilby.struct.Settings;
+import trilby.struct.Unboxed.IntIntVoidFn;
 
 public class GraphTests
 {
@@ -104,14 +108,27 @@ public class GraphTests
     public void testIt() {
         testIt(edges_1, makeMutableGraph(edges_1), null);
         testIt(edges_2, makeMutableGraph(edges_2), doms_2);
+        makeImmutableGraph(edges_1);
+        makeImmutableGraph(edges_2);
     }
     
-    private IntGraph makeMutableGraph(Integer[][] edges) {
+    private IntGraph makeMutableGraph(final Integer[][] edges) {
         MutableIntGraph g = new MutableIntGraph(true);
         for (Integer[] e: edges)
             for (int i = 1; i < e.length; i++)
                 g.edge(e[0], e[i]);
         return g;
+    }
+    
+    private IntGraph makeImmutableGraph(final Integer[][] edges) {
+        Data data = new Data() {
+            public void edges(IntIntVoidFn fn) {
+                for (Integer[] e: edges)
+                    for (int i = 1; i < e.length; i++)
+                        fn.apply(e[0], e[i]);
+            }
+        };
+        return new ImmutableIntGraph(data, new Settings());
     }
     
     private void testIt(Integer[][] edges, IntGraph g, int[] doms) {
