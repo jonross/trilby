@@ -38,6 +38,8 @@ public class ImmutableIntGraph implements IntGraph
         
         data.edges(new IntIntVoidFn() {
             public void apply(int x, int y) {
+                if (x <= 0 || y <= 0)
+                    throw new IllegalArgumentException("invalid edge: " + x + "->" + y);
                 out.degrees.adjust(x, 1);
                 in.degrees.adjust(y, 1);
                 if (x > maxId)
@@ -50,7 +52,6 @@ public class ImmutableIntGraph implements IntGraph
         
         in.fill(data);
         out.fill(data);
-        
     }
     
     private class Edges
@@ -83,6 +84,8 @@ public class ImmutableIntGraph implements IntGraph
                 }
             }
             
+            boundaries.set(nextOffset);
+            
             data.edges(new IntIntVoidFn() {
                 public void apply(int x, int y) {
                     int from = out ? x : y;
@@ -94,6 +97,20 @@ public class ImmutableIntGraph implements IntGraph
             });
             
             degrees = null;
+        }
+        
+        long walk(int v) {
+            int offset = offsets.get(v);
+            if (offset == 0)
+                return 0;
+            return (((long) offset) << 32) | edges.get(offset);
+        }
+        
+        long next(long cursor) {
+            int offset = 1 + (int) (cursor >>> 32);
+            if (boundaries.get(offset))
+                return 0;
+            return (((long) offset) << 32) | edges.get(offset);
         }
     }
     
@@ -114,18 +131,18 @@ public class ImmutableIntGraph implements IntGraph
     }
 
     public long walkInEdges(int v) {
-        return 0;
+        return in.walk(v);
     }
 
     public long nextInEdge(long cursor) {
-        return 0;
+        return in.next(cursor);
     }
 
     public long walkOutEdges(int v) {
-        return 0;
+        return out.walk(v);
     }
 
     public long nextOutEdge(long cursor) {
-        return 0;
+        return out.next(cursor);
     }
 }

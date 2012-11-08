@@ -108,8 +108,8 @@ public class GraphTests
     public void testIt() {
         testIt(edges_1, makeMutableGraph(edges_1), null);
         testIt(edges_2, makeMutableGraph(edges_2), doms_2);
-        makeImmutableGraph(edges_1);
-        makeImmutableGraph(edges_2);
+        testIt(edges_1, makeImmutableGraph(edges_1), null);
+        testIt(edges_2, makeImmutableGraph(edges_2), doms_2);
     }
     
     private IntGraph makeMutableGraph(final Integer[][] edges) {
@@ -133,11 +133,15 @@ public class GraphTests
     
     private void testIt(Integer[][] edges, IntGraph g, int[] doms) {
         
+        boolean up = g instanceof MutableIntGraph;
+        
         for (Integer[] e: edges) {
-            int i = 1;
-            for (long cur = g.walkOutEdges(e[0]); cur != 0; cur = g.nextOutEdge(cur))
-                assertEquals((int) e[i++], (int) (cur & 0xFFFFFFFF));
-            assertEquals(i, e.length);
+            int i = up ? 1 : e.length-1;
+            for (long cur = g.walkOutEdges(e[0]); cur != 0; cur = g.nextOutEdge(cur)) {
+                assertEquals((int) e[i], (int) (cur & 0xFFFFFFFFL));
+                i += up ? 1 : -1;
+            }
+            assertEquals(i, up ? e.length : 0);
         }
         
         if (doms == null)

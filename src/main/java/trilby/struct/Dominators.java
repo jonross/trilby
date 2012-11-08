@@ -57,14 +57,9 @@ public class Dominators {
 
         // step 4
         idom[1] = 0;
-        for (int w = 2; w <= max; w++) {
-            if (idom[w] != semi[w]) {
+        for (int w = 2; w <= max; w++)
+            if (idom[w] != semi[w])
                 idom[w] = idom[idom[w]];
-            }
-        }
-
-        for (int w = 1; w <= max; w++)
-            System.out.printf("idom[%d] = %d\n", rev[w], rev[idom[w]]);
     }
 
     public int[] get() {
@@ -90,21 +85,18 @@ public class Dominators {
     }
 
     private int eval(int v) {
-        if (ancestor[v] != 0) {
+        if (ancestor[v] != 0)
             compress(v);
-        }
         return best[v];
     }
 
     private void compress(int v) {
         int a = ancestor[v];
-        if (ancestor[a] == 0) {
+        if (ancestor[a] == 0)
             return;
-        }
         compress(a);
-        if (semi[best[v]] > semi[best[a]]) {
+        if (semi[best[v]] > semi[best[a]])
             best[v] = best[a];
-        }
         ancestor[v] = ancestor[a];
     }
 }
