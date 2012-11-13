@@ -35,18 +35,12 @@ import trilby.util.NumericHistogram
 
 class Heap(val idSize: Int, val fileDate: Date) {
     
-    import Heap.Slice
-    private[this] val numSlices = 4
-    
     /** True if 64-bit VM */
     val longIds = idSize == 1
     
     /** Subcontract out class information */
     val classes = new ClassInfo()
     
-    /** Worker data slices */
-    val slices = (0 until numSlices).map(new Slice(this, _, numSlices)).toArray
-
     /** Maps heap IDs to UTF-8 strings (field names, class names etc.) */
     private[this] val heapNamesById = new TLongObjectHashMap[String](100000)
     
@@ -71,17 +65,17 @@ class Heap(val idSize: Int, val fileDate: Date) {
     /** TODO: optimize this */
     private[this] val offsets = new ExpandoArray.OfLong(10240, false)
     
+    /** Temporary object, records references as the heap is read */
+    private[hprof] var graphBuilder = new ObjectGraphBuilder()
+
+    /** After heap read, {@link #graphBuilder} builds this */
+    private[this] var graph: ObjectGraph = null
+    
     /** Highest HID seen by addInstance or addClassDef */
     private[this] var highestHid = 0L
     
     /** Highest offset seen by addInstance */
     private[this] var highestOffset = 0L
-    
-    /**
-     * Return the Heap.Slice associated with an object ID
-     */
-    
-    def apply(id: Int) = slices(id % numSlices)
     
     /**
      * Record a GC root. TODO: make work 
@@ -105,7 +99,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
      */
 
     def addReference(fromId: Int, toId: Long) =
-        this(fromId).addReference(fromId, toId)
+        graphBuilder.addRef(fromId, toId)
         
     /**
      * Record a static reference from a class to an object, given their
@@ -295,9 +289,15 @@ class Heap(val idSize: Int, val fileDate: Date) {
         initialSizes.destroy()
         initialSizes = null // allow gc
         
-        slices.par foreach { _.preBuild(objectIdMap) }
-        slices.par foreach { _.build(maxId) }
-        slices.par foreach { _.postBuild() }
+        println("Remapping heap IDs")
+        graphBuilder.mapHeapIds(objectIdMap)
+        
+        System.out.println("Building graph")
+        graph = new ObjectGraph(maxId, this)
+        printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
+            
+        graphBuilder.destroy()
+        graphBuilder = null // allow GC
         
         // As of this point we no longer need the ID mapping.
         
@@ -314,8 +314,8 @@ class Heap(val idSize: Int, val fileDate: Date) {
         }
         
         // (slices map (_.inCounts) toSeq) foreach (showCounts("xin", _))
-        showCounts("in", slices map (_.inCounts) reduce (_ + _))
-        showCounts("out", slices map (_.outCounts) reduce (_ + _))
+        showCounts("in", graph.inCounts)
+        showCounts("out", graph.outCounts)
     }
     
     // TODO: comments
@@ -325,10 +325,10 @@ class Heap(val idSize: Int, val fileDate: Date) {
             fn(oid)
     
     def forEachReferrer(oid: Int, fn: Int => Unit) = 
-        this(oid).forEachReferrer(oid, fn)
+        graph.forEachReferrer(oid, fn)
 
     def forEachReferee(oid: Int, fn: Int => Unit) = 
-        this(oid).forEachReferee(oid, fn)
+        graph.forEachReferee(oid, fn)
 
     def getObjectSize(id: Int) = 
         finalSizes.get(id)
@@ -338,48 +338,3 @@ class Heap(val idSize: Int, val fileDate: Date) {
     def elideTypes(types: String) { }
 }
 
-object Heap {
-    
-    class Slice(heap: Heap, sliceId: Int, numSlices: Int) {
-    
-        def owns(oid: Int) = oid % numSlices == sliceId
-    
-        val shift = (oid: Int) => (oid - sliceId) / numSlices
-        val unshift = (xid: Int) => xid * numSlices + sliceId
-        
-        /** Temporary object, records references as the heap is read */
-        private[hprof] var graphBuilder = 
-            new ObjectGraphBuilder(sliceId, numSlices)
-    
-        /** After heap read, {@link #graphBuilder} builds this */
-        private[this] var graph: ObjectGraph = null
-    
-        def addReference(fromOid: Int, toHid: Long) =
-            graphBuilder.addRef(fromOid, toHid)
-    
-        def forEachReferrer(id: Int, fn: Int => Unit) = 
-            graph.forEachReferrer(id, fn)
-    
-        def forEachReferee(id: Int, fn: Int => Unit) = 
-            graph.forEachReferee(id, fn)
-     
-        def inCounts = graph.inCounts
-        def outCounts = graph.outCounts
-        
-        def preBuild(idMap: IdMap3) = {
-            println("Remapping heap IDs")
-            graphBuilder.mapHeapIds(idMap)
-        }
-    
-        private[hprof] def build(maxId: Int) {
-            System.out.println("Building graph")
-            graph = new ObjectGraph(maxId, heap.slices, sliceId)
-            printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
-        }
-        
-        def postBuild() {
-            graphBuilder.destroy()
-            graphBuilder = null // allow GC
-        }
-    }
-}

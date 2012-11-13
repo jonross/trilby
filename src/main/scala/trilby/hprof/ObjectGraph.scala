@@ -33,30 +33,13 @@ import trilby.struct.IdMap3
 /**
  */
 
-class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
+class ObjectGraph(val maxOid: Int, heap: Heap) {
     
-    /** Slice containing this graph section */
-    private[this] val mySlice = slices(sliceId)
-    
-    /** The highest XID stored in this slice */
-    private[this] val maxXid = {
-        def find(oid: Int): Int = if (mySlice owns oid) oid else find(oid - 1)
-        mySlice shift find(maxOid)
-    }
-
     /** Inbound edges */
-    private[this] val in = {
-        val builder = slices(sliceId).graphBuilder
-        def forEachReference(fn: (Int, Int) => Unit) =
-            for (slice <- slices) slice.graphBuilder.forEachBackwardReference(fn, sliceId)
-        new Edges("in", forEachReference)
-    }
+    private[this] val in = new Edges("in", heap.graphBuilder.forEachBackwardReference)
     
     /** Outbound edges */
-    private[this] val out = {
-        val builder = slices(sliceId).graphBuilder
-        new Edges("out", builder.forEachForwardReference(_, -1))
-    }
+    private[this] val out = new Edges("out", heap.graphBuilder.forEachForwardReference)
     
     def forEachReferrer(oid: Int, fn: Int => Unit) =
         in.forEachEdgeFrom(oid, fn)
@@ -79,10 +62,10 @@ class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
                 )
     {
         /** Indexed by object ID, == the offset into edges[] for the object's first edge, else 0 */
-        private[this] val offsets = new Array[Int](maxXid+1)
+        private[this] val offsets = new Array[Int](maxOid+1)
         
         /** Indexed by object ID, == the number of edges in edges[] */
-        private[this] val degrees = new Counts.OneByte(maxXid+1, 0.001)
+        private[this] val degrees = new Counts.OneByte(maxOid+1, 0.001)
         
         /** Next place in edges[] where we're adding data; zero unused since it's a flag value */
         private[this] var nextOffset = 1
@@ -107,13 +90,12 @@ class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
             printf("Generating degree counts\n")
             
             forEachReference((fromOid, toOid) => {
-                val xid = mySlice shift fromOid
-                degrees.adjust(xid, 1)
+                degrees.adjust(fromOid, 1)
                 numEdges += 1
             })
             
             var i = 1
-            while (i <= maxXid) {
+            while (i <= maxOid) {
                 histo.add(degrees get i)
                 i += 1
             }
@@ -129,7 +111,7 @@ class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
             printf("Finding edge offsets\n")
 
             var xid = 0
-            while (xid <= maxXid) {
+            while (xid <= maxOid) {
                 val degree = degrees.get(xid) 
                 if (degree == 0) {
                     offsets(xid) = 0
@@ -150,10 +132,8 @@ class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
             // Now that we have the offsets we can fill the edge array.
             
             forEachReference((fromOid, toOid) => {
-                // printf("%s link from %d to %d\n", dir, fromOid, toOid)
-                val fromXid = mySlice shift fromOid
-                val offset = offsets(fromXid)
-                val delta = degrees.adjust(fromXid, -1)
+                val offset = offsets(fromOid)
+                val delta = degrees.adjust(fromOid, -1)
                 edges(offset + delta) = toOid
             })
         }
@@ -169,7 +149,7 @@ class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
             if (oid == 0)
                 return // filter out unmappable HIDs noted above 
                 
-            var i = offsets(mySlice shift oid)
+            var i = offsets(oid)
             if (i == 0) {
                 return
             }
@@ -194,7 +174,7 @@ class ObjectGraph(val maxOid: Int, slices: Array[Heap.Slice], sliceId: Int) {
  * TODO: move to Int in signature, now using compressed HIDs.
  */
 
-class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
+class ObjectGraphBuilder {
     
     /** Synthetic object IDs at source of each edge */
     private[this] val refsFrom = new ExpandoArray.OfInt(10240, false)
@@ -248,18 +228,16 @@ class ObjectGraphBuilder(sliceId: Int, numSlices: Int) {
     /** Return the number of unmappable references */
     def numDead = _numDead
     
-    def forEachForwardReference(fn: (Int, Int) => Unit, inSlice: Int = -1) =
+    def forEachForwardReference(fn: (Int, Int) => Unit) =
         for (i <- (0 until refsFrom.size)) {
             val from = refsFrom.get(i)
-            if (inSlice == -1 || from % numSlices == inSlice)
-                fn(from, refsTo.get(i))
+            fn(from, refsTo.get(i))
         }
     
-    def forEachBackwardReference(fn: (Int, Int) => Unit, inSlice: Int = -1) {
+    def forEachBackwardReference(fn: (Int, Int) => Unit) {
         for (i <- (0 until refsFrom.size)) {
             val to = refsTo.get(i)
-            if (inSlice == -1 || to % numSlices == inSlice)
-                fn(to, refsFrom.get(i))
+            fn(to, refsFrom.get(i))
         }
     }
 }
