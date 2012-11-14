@@ -29,6 +29,7 @@ import trilby.struct.BitSet
 import trilby.struct.ExpandoArray
 import trilby.util.NumericHistogram
 import trilby.struct.IdMap3
+import trilby.struct.ImmutableIntGraph
 
 /**
  */
@@ -73,19 +74,16 @@ class ObjectGraph(val maxOid: Int, heap: Heap) {
         /** Number of edges in this set */
         private[this] var numEdges = 0
         
-        /** Indexed by offsets[xid] for XIDs with at least one out-edge */
+        /** Indexed by offsets[oid] for OIDs with at least one out-edge */
         private[this] var edges: Array[Int] = null
         
-        /** Has 1s at indices for which edges[xid] begins an edge list */
+        /** Has 1s at indices for which edges[oid] begins an edge list */
         private[this] var boundaries: BitSet.Basic = null
         
         /** Tracks edge counts */
         private[this] val histo = new NumericHistogram(11)
             
         {
-            // Can't calculate numEdges in advance because for in edges, the count
-            // we own varies by slice.
-            
             val in = dir == "in"
             printf("Generating degree counts\n")
             
@@ -110,18 +108,18 @@ class ObjectGraph(val maxOid: Int, heap: Heap) {
             
             printf("Finding edge offsets\n")
 
-            var xid = 0
-            while (xid <= maxOid) {
-                val degree = degrees.get(xid) 
+            var oid = 0
+            while (oid <= maxOid) {
+                val degree = degrees.get(oid) 
                 if (degree == 0) {
-                    offsets(xid) = 0
+                    offsets(oid) = 0
                 }
                 else {
-                    offsets(xid) = nextOffset
+                    offsets(oid) = nextOffset
                     boundaries.set(nextOffset)
                     nextOffset += degree
                 }
-                xid += 1
+                oid += 1
             }
             
             if (nextOffset != numEdges + 1)
@@ -174,7 +172,7 @@ class ObjectGraph(val maxOid: Int, heap: Heap) {
  * TODO: move to Int in signature, now using compressed HIDs.
  */
 
-class ObjectGraphBuilder {
+class ObjectGraphBuilder extends ImmutableIntGraph.Data {
     
     /** Synthetic object IDs at source of each edge */
     private[this] val refsFrom = new ExpandoArray.OfInt(10240, false)
@@ -231,13 +229,25 @@ class ObjectGraphBuilder {
     def forEachForwardReference(fn: (Int, Int) => Unit) =
         for (i <- (0 until refsFrom.size)) {
             val from = refsFrom.get(i)
-            fn(from, refsTo.get(i))
+            val to = refsTo.get(i)
+            if (to != 0)
+                fn(from, to)
         }
     
     def forEachBackwardReference(fn: (Int, Int) => Unit) {
         for (i <- (0 until refsFrom.size)) {
+            val from = refsFrom.get(i)
             val to = refsTo.get(i)
-            fn(to, refsFrom.get(i))
+            if (to != 0)
+                fn(to, from)
         }
     }
+    
+    def edges(fn: Unboxed.IntIntVoidFn) =
+        for (i <- (0 until refsFrom.size)) {
+            val from = refsFrom.get(i)
+            val to = refsTo.get(i)
+            if (to != 0)
+                fn(from, to)
+        }
 }

@@ -69,7 +69,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
     private[hprof] var graphBuilder = new ObjectGraphBuilder()
 
     /** After heap read, {@link #graphBuilder} builds this */
-    private[this] var graph: ObjectGraph = null
+    private[this] var graph: ObjectGraph2 = null
     
     /** Highest HID seen by addInstance or addClassDef */
     private[this] var highestHid = 0L
@@ -293,8 +293,11 @@ class Heap(val idSize: Int, val fileDate: Date) {
         graphBuilder.mapHeapIds(objectIdMap)
         
         System.out.println("Building graph")
-        graph = new ObjectGraph(maxId, this)
+        graph = new ObjectGraph2(this, graphBuilder)
         printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
+        
+        // System.out.println("Building v2 graph")
+        // new ObjectGraph2(this, graphBuilder)
             
         graphBuilder.destroy()
         graphBuilder = null // allow GC
@@ -314,8 +317,8 @@ class Heap(val idSize: Int, val fileDate: Date) {
         }
         
         // (slices map (_.inCounts) toSeq) foreach (showCounts("xin", _))
-        showCounts("in", graph.inCounts)
-        showCounts("out", graph.outCounts)
+        // showCounts("in", graph.inCounts)
+        // showCounts("out", graph.outCounts)
     }
     
     // TODO: comments
