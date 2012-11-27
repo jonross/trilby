@@ -24,14 +24,15 @@ package trilby.hprof
 import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import gnu.trove.map.hash.TLongLongHashMap
-import trilby.struct.Counts
-import trilby.struct.ExpandoArray
 import trilby.struct.IdMap3
 import trilby.util.Oddments._
 import java.util.Date
 import java.util.HashMap
 import gnu.trove.map.hash.TLongIntHashMap
 import trilby.util.NumericHistogram
+import com.github.jonross.jmiser.ExpandoArray
+import com.github.jonross.jmiser.Settings
+import com.github.jonross.jmiser.Counts
 
 class Heap(val idSize: Int, val fileDate: Date) {
     
@@ -51,19 +52,19 @@ class Heap(val idSize: Int, val fileDate: Date) {
     private[this] var objectIdMap = new IdMap3()
     
     /** Static references get special treatment after heap is read */
-    private[this] val staticRefs = new ExpandoArray.OfLong(1024, true)
+    private[this] val staticRefs = new ExpandoArray.OfLong(new Settings().chunkSize(1024))
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
     
     /** Temporary object, records object sizes as the heap is read */
-    private[this] var initialSizes = new ExpandoArray.OfInt(10240, false)
+    private[this] var initialSizes = new ExpandoArray.OfInt(new Settings())
     
     /** After heap read, {@link #initialSizes} is optimized to this */
     private[this] var finalSizes: Counts.TwoByte = null
     
     /** TODO: optimize this */
-    private[this] val offsets = new ExpandoArray.OfLong(10240, false)
+    private[this] val offsets = new ExpandoArray.OfLong(new Settings())
     
     /** Temporary object, records references as the heap is read */
     private[hprof] var graphBuilder = new ObjectGraphBuilder()

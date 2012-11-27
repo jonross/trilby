@@ -20,29 +20,45 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package com.github.jonross.jmiser;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
+/**
+ * Fluent, immutable options object for creating structures that may reside off-heap.
+ */
+
 public class Settings implements Cloneable
 {
     private boolean onHeap = false;
-    private int blockSize = 1000;
+    private int chunkSize = 16384;
     
-    public Settings blockSize(int b) {
+    public static Settings DEFAULT = new Settings();
+    
+    /**
+     * Set # of items in byte buffers for chunk-allocated structures like
+     * {@link ExpandoArray}.  Default 16K, scaled up / down depending on
+     * item size.
+     */
+    
+    public Settings chunkSize(int size) {
         Settings s = _clone();
-        s.blockSize = b;
+        s.chunkSize = size;
         return s;
     }
     
-    public int blockSize() {
-        return blockSize;
+    public int chunkSize() {
+        return chunkSize;
     }
+    
+    /**
+     * Indicate whether byte buffers live on the heap; default false.
+     */
 
-    public Settings onHeap(boolean h) {
+    public Settings onHeap(boolean on) {
         Settings s = _clone();
-        s.onHeap = h;
+        s.onHeap = on;
         return s;
     }
     
@@ -50,14 +66,29 @@ public class Settings implements Cloneable
         return onHeap;
     }
     
+    /**
+     * Allocate a {@link ByteBuffer} according to established settings.
+     */
+    
     public ByteBuffer alloc(int nbytes) {
         return onHeap ? ByteBuffer.allocate(nbytes) : ByteBuffer.allocateDirect(nbytes);
     }
+    
+    /**
+     * "Free" a {@link ByteBuffer} allocated with {@link #alloc}; no effect if
+     * buffer was on the heap.
+     */
     
     public void free(ByteBuffer buf) {
         if (!onHeap)
             _free(buf);
     }
+    
+    /**
+     * "Free" several byte buffers in a separate thread.  TODO: use queue.
+     * 
+     * @see #free(ByteBuffer)
+     */
 
     public void free(final ByteBuffer[] buffers) {
         if (!onHeap) {

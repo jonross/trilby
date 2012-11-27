@@ -25,9 +25,10 @@ import java.util.HashMap
 import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import trilby.util.Oddments._
-import trilby.struct.ExpandoArray
-import trilby.struct.Counts
 import com.google.common.primitives.Ints
+import com.github.jonross.jmiser.ExpandoArray
+import com.github.jonross.jmiser.Settings
+import com.github.jonross.jmiser.Counts
 
 class ClassInfo {
 
@@ -41,7 +42,7 @@ class ClassInfo {
     private[this] val byClassId = new TIntObjectHashMap[ClassDef](100000)
     
     /** Stores each object's class ID while reading the heap. */
-    private[this] var initialObjectMap = new ExpandoArray.OfInt(10240, false)
+    private[this] var initialObjectMap = new ExpandoArray.OfInt(new Settings())
     
     /** After reading the heap, {@link #initialObjectMap} is optimized to this. */
     private[this] var finalObjectMap: Counts.TwoByte = null

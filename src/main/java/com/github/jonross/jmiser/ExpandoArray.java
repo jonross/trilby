@@ -20,20 +20,23 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package com.github.jonross.jmiser;
 
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 /**
- * A dynamic array that expands without GC, up to a preset limit.  Instances of this are
- * expected to get really, really huge (several hundred million elements, perhaps a billion)
- * so some waste is tolerated in incomplete buckets.
+ * A dynamic array that expands without GC, on or off the heap, up to a preset
+ * limit. Instances of this are expected to get really, really huge (several
+ * hundred million elements and up) so some waste is tolerated in
+ * incomplete buckets.
  * <ul>
  * <li><code>add(value)</code> puts value after the last added value</li>
- * <li><code>set(index, value)</code> explicit set at an index; doesn't affect last value</li>
+ * <li><code>set(index, value)</code> explicit set at an index; doesn't affect
+ * last value</li>
  * <li><code>get(index)</code></li>
- * <li><code>size()</code> number of elements, including holes left by sets past cursor<li>
+ * <li><code>size()</code> number of elements, including holes left by sets past
+ * cursor
+ * <li>
  */
 
 public class ExpandoArray
@@ -41,16 +44,15 @@ public class ExpandoArray
     public abstract static class Base
     {
         private ByteBuffer[] buffers;
-        protected final int bufSize;
-        protected final int numSize;
-        private final boolean onHeap;
+        protected final int unitSize, chunkSize;
+        protected final Settings settings;
         protected int cursor = 0;
         private int high = -1;
         
-        protected Base(int bufferSize, int numSize, boolean onHeap) {
-            this.onHeap = onHeap;
-            this.numSize = numSize;
-            this.bufSize = bufferSize;
+        protected Base(int unitSize, Settings settings) {
+            this.unitSize = unitSize;
+            this.settings = settings;
+            this.chunkSize = settings.chunkSize();
             this.buffers = new ByteBuffer[1024];
         }
         
@@ -59,59 +61,20 @@ public class ExpandoArray
         }
         
         public void destroy() {
-            if (!onHeap) {
-                Thread t = new Thread() {
-                    public void run() {
-                        for (int i = 0; i < buffers.length; i++) {
-                            if (buffers[i] != null) {
-                                Base.destroy(buffers[i]);
-                            }
-                        }
-                    }
-                };
-                t.setDaemon(true);
-                t.start();
-            }
-        }
-        
-// Method from
-        // http://stackoverflow.com/questions/1854398/how-to-garbage-collect-a-direct-buffer-java
-        // This of course is Sun-specific, for now.
-        
-        private static Method cleanerMethod = null;
-        private static Method cleanMethod = null;
-        
-        private static void destroy(ByteBuffer buf) {
-            try {
-                if (cleanerMethod == null) {
-                    cleanerMethod = buf.getClass().getMethod("cleaner");
-                    cleanerMethod.setAccessible(true);
-                }
-                Object cleaner = cleanerMethod.invoke(buf);
-                if (cleanMethod == null) {
-                    cleanMethod = cleaner.getClass().getMethod("clean");
-                    cleanMethod.setAccessible(true);
-                }
-                cleanMethod.invoke(cleaner);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e); // TODO fix
-            }
+            settings.free(buffers);
         }
         
         protected ByteBuffer getBuffer(int index) {
-            int slot = index / bufSize;
-            if (slot >= buffers.length) {
+            int slot = index / chunkSize;
+            if (slot >= buffers.length)
                 throw new ArrayIndexOutOfBoundsException(index);
-            }
             return buffers[slot];
         }
         
         protected ByteBuffer getOrCreateBuffer(int index) {
-            if (index > high) {
+            if (index > high)
                 high = index;
-            }
-            int slot = index / bufSize;
+            int slot = index / chunkSize;
             if (slot >= buffers.length) {
                 int newSize = buffers.length;
                 while (newSize <= slot)
@@ -121,25 +84,22 @@ public class ExpandoArray
                 buffers = newBuffers;
             }
             ByteBuffer buffer = buffers[slot];
-            if (buffer == null) {
-                int nbytes = bufSize * numSize;
-                buffer = buffers[slot] = onHeap ?
-                    ByteBuffer.allocate(nbytes) : ByteBuffer.allocateDirect(nbytes);
-            }
+            if (buffer == null)
+                buffer = buffers[slot] = settings.alloc(chunkSize * unitSize);
             return buffer;
         }
     }
     
     public static class OfByte extends Base {
-        public OfByte(int bufferSize, boolean onHeap) {
-            super(bufferSize, 1, onHeap);
+        public OfByte(Settings settings) {
+            super(1, settings);
         }
         public byte get(int index) {
             ByteBuffer bucket = getBuffer(index);
-            return bucket == null ? 0 : bucket.get((index % bufSize) * numSize);
+            return bucket == null ? 0 : bucket.get(index % chunkSize);
         }
         public void set(int index, byte value) {
-            getOrCreateBuffer(index).put((index % bufSize) * numSize, value);
+            getOrCreateBuffer(index).put(index % chunkSize, value);
         }
         public void add(byte value) {
             set(cursor++, value);
@@ -147,15 +107,15 @@ public class ExpandoArray
     }
     
     public static class OfShort extends Base {
-        public OfShort(int bufferSize, boolean onHeap) {
-            super(bufferSize, 2, onHeap);
+        public OfShort(Settings settings) {
+            super(2, settings);
         }
         public short get(int index) {
             ByteBuffer bucket = getBuffer(index);
-            return bucket == null ? 0 : bucket.getShort((index % bufSize) * numSize);
+            return bucket == null ? 0 : bucket.getShort((index % chunkSize) * 2);
         }
         public void set(int index, short value) {
-            getOrCreateBuffer(index).putShort((index % bufSize) * numSize, value);
+            getOrCreateBuffer(index).putShort((index % chunkSize) * 2, value);
         }
         public void add(short value) {
             set(cursor++, value);
@@ -163,22 +123,19 @@ public class ExpandoArray
     }
     
     public static class OfInt extends Base {
-        public OfInt(int bufferSize, boolean onHeap) {
-            super(bufferSize, 4, onHeap);
-        }
         public OfInt(Settings settings) {
-            this(settings.blockSize(), settings.onHeap());
+            super(4, settings);
         }
         public int get(int index) {
             ByteBuffer bucket = getBuffer(index);
-            return bucket == null ? 0 : bucket.getInt((index % bufSize) * numSize);
+            return bucket == null ? 0 : bucket.getInt((index % chunkSize) * 4);
         }
         public void set(int index, int value) {
-            getOrCreateBuffer(index).putInt((index % bufSize) * numSize, value);
+            getOrCreateBuffer(index).putInt((index % chunkSize) * 4, value);
         }
         public int adjust(int index, int delta) {
             ByteBuffer buf = getOrCreateBuffer(index);
-            int pos = (index % bufSize) * numSize;
+            int pos = (index % chunkSize) * 4;
             int value = buf.getInt(pos) + delta;
             buf.putInt(pos, value);
             return value;
@@ -189,15 +146,15 @@ public class ExpandoArray
     }
     
     public static class OfLong extends Base {
-        public OfLong(int bufferSize, boolean onHeap) {
-            super(bufferSize, 8, onHeap);
+        public OfLong(Settings settings) {
+            super(8, settings);
         }
         public long get(int index) {
             ByteBuffer bucket = getBuffer(index);
-            return bucket == null ? 0 : bucket.getLong((index % bufSize) * numSize);
+            return bucket == null ? 0 : bucket.getLong((index % chunkSize) * 8);
         }
         public void set(int index, long value) {
-            getOrCreateBuffer(index).putLong((index % bufSize) * numSize, value);
+            getOrCreateBuffer(index).putLong((index % chunkSize) * 8, value);
         }
         public void add(long value) {
             set(cursor++, value);

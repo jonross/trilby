@@ -26,13 +26,14 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import com.github.jonross.jmiser.ImmutableIntGraph;
+import com.github.jonross.jmiser.IntGraph;
+import com.github.jonross.jmiser.MutableIntGraph;
+import com.github.jonross.jmiser.Settings;
+import com.github.jonross.jmiser.ImmutableIntGraph.Data;
+import com.github.jonross.jmiser.Unboxed.IntIntVoidFn;
+
 import trilby.struct.Dominators;
-import trilby.struct.ImmutableIntGraph;
-import trilby.struct.ImmutableIntGraph.Data;
-import trilby.struct.IntGraph;
-import trilby.struct.MutableIntGraph;
-import trilby.struct.Settings;
-import trilby.struct.Unboxed.IntIntVoidFn;
 
 public class GraphTests
 {
@@ -113,7 +114,7 @@ public class GraphTests
     }
     
     private IntGraph makeMutableGraph(final Integer[][] edges) {
-        MutableIntGraph g = new MutableIntGraph(true);
+        MutableIntGraph g = new MutableIntGraph(new Settings());
         for (Integer[] e: edges)
             for (int i = 1; i < e.length; i++)
                 g.edge(e[0], e[i]);
@@ -147,9 +148,11 @@ public class GraphTests
         if (doms == null)
             return;
         
-        int[] idom = new Dominators(g).get();
+        Dominators d = new Dominators(g);
+        int[] idom = d.get();
         for (int i = 1; i < doms.length; i++)
             assertEquals(doms[i], idom[i]);
+        d.destroy();
     }
     
     private static Integer[] ints(Integer...ints) {

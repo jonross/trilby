@@ -20,34 +20,24 @@
  * SOFTWARE.
  */
 
-package trilby.util
-
-import com.github.jonross.jmiser.BitSet
-import com.github.jonross.jmiser.Settings
+package com.github.jonross.jmiser;
 
 /**
- * A subset of the objects IDs in a heap.
+ * Function & iteration interfaces & support that handle numeric primitives
+ * without boxing.
  */
 
-class ObjectSet(val maxId: Int) {
+public class Unboxed
+{
+    public interface IntIterator {
+        int next();
+    }
     
-    private[this] val bits = new BitSet(Settings.DEFAULT)
+    public interface IntIntFn {
+        int apply(int x);
+    }
     
-    def add(objectId: Int) = bits.set(objectId)
-    
-    def contains(objectId: Int) = bits.get(objectId)
-    
-    /**
-     * Iterate over object IDs.  Provided in this form so we don't force the
-     * caller to create a closure.
-     */
-    
-    def forEachId(fn: Int => Unit) {
-        var id = 0
-        while (id <= maxId) {
-            if (bits.get(id))
-                fn(id)
-            id += 1
-        }
+    public interface IntIntVoidFn {
+        void apply(int x, int y);
     }
 }

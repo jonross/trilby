@@ -20,24 +20,55 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package com.github.jonross.jmiser;
 
 /**
- * Function & iteration interfaces & support that handle numeric primitives
- * without boxing.
+ * Simple, not very space-efficient implementation of {@link IntGraph} built on {@link IntLists}.
  */
 
-public class Unboxed
+public class MutableIntGraph implements IntGraph
 {
-    public interface IntIterator {
-        int next();
+    private IntLists in, out;
+    private int max = 0;
+    
+    public MutableIntGraph(Settings settings) {
+        in = new IntLists(settings);
+        out = new IntLists(settings);
     }
     
-    public interface IntIntFn {
-        int apply(int x);
+    public void destroy() {
+        in.destroy();
+        out.destroy();
+    }
+
+    public void edge(int from, int to) {
+        if (from == 0 || to == 0)
+            throw new IllegalArgumentException("Graph node IDs must be positive integers");
+        out.add(from, to);
+        in.add(to, from);
+        if (from > max)
+            max = from;
+        if (to > max)
+            max = to;
     }
     
-    public interface IntIntVoidFn {
-        void apply(int x, int y);
+    public int maxNode() {
+        return max;
+    }
+    
+    public long walkInEdges(int v) {
+        return in.walk(v);
+    }
+    
+    public long nextInEdge(long cursor) {
+        return in.next(cursor);
+    }
+    
+    public long walkOutEdges(int v) {
+        return out.walk(v);
+    }
+    
+    public long nextOutEdge(long cursor) {
+        return out.next(cursor);
     }
 }

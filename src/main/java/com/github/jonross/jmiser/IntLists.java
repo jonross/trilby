@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package com.github.jonross.jmiser;
 
 /**
  * Manage a related group of linked lists of unboxed integers, on or off the heap.
@@ -34,13 +34,19 @@ public class IntLists {
     private final ExpandoArray.OfInt chains;
     private int freelist = 0;
     
-    public IntLists(boolean onHeap) {
-        firsts = new ExpandoArray.OfInt(1000, onHeap);
-        lasts = new ExpandoArray.OfInt(1000, onHeap);
-        chains = new ExpandoArray.OfInt(1000, onHeap);
+    public IntLists(Settings settings) {
+        firsts = new ExpandoArray.OfInt(settings);
+        lasts = new ExpandoArray.OfInt(settings);
+        chains = new ExpandoArray.OfInt(settings);
         // 0 means nil so the first cons is not used
         chains.add(0);
         chains.add(0);
+    }
+    
+    public void destroy() {
+        firsts.destroy();
+        lasts.destroy();
+        chains.destroy();
     }
     
     /**
@@ -106,7 +112,7 @@ public class IntLists {
     }
     
     /**
-     * Iterate a list, without touching the heap.  Idiom:
+     * Iterate a list, without touching the heap.  Usage:
      * <pre>
      * for (int cursor = l.walk(id); cursor != 0; cursor = l.next(cursor)) {
      *     int value = (int) (cursor & 0xFFFFFFFF);

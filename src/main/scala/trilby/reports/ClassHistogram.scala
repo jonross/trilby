@@ -39,7 +39,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     extends QueryFunction with Renderable
 {
     class Counts(val classDef: ClassDef, var count: Int = 0, var nbytes: Long = 0L) { }
-    val counts = new TIntObjectHashMap[Counts]()
+    val counts = new TIntObjectHashMap[Counts]
     
     // Which object IDs are in the histogram
     private[this] val knownIds = new ObjectSet(heap.maxId)

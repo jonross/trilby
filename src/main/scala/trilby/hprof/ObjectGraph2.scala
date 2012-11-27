@@ -22,22 +22,20 @@
 
 package trilby.hprof
 
+import com.github.jonross.jmiser.Settings
+import trilby.struct.Dominators
 import trilby.util.Oddments._
-import trilby.struct.Unboxed
-import trilby.struct.Counts
-import trilby.struct.BitSet
-import trilby.struct.ExpandoArray
-import trilby.util.NumericHistogram
-import trilby.struct.IdMap3
-import trilby.struct.ImmutableIntGraph
-import trilby.struct.Settings
+import com.github.jonross.jmiser.ImmutableIntGraph
 
 /**
  */
 
 class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
     
-    val g = new ImmutableIntGraph(builder, new Settings)
+    printf("Building graph\n")
+    val g = new ImmutableIntGraph(builder, Settings.DEFAULT)
+    printf("Finding dominators\n")
+    val dom = new Dominators(g)
     
     def forEachReferrer(oid: Int, fn: Int => Unit) {
         var cur = g.walkInEdges(oid)

@@ -20,9 +20,15 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package com.github.jonross.jmiser;
 
-import trilby.struct.Unboxed.IntIntVoidFn;
+import com.github.jonross.jmiser.Unboxed.IntIntVoidFn;
+
+/**
+ * A more advanced implementation of {@link IntGraph} than
+ * {@link MutableIntGraph}, this uses less space via more compact edge arrays
+ * and an iteration function to specify the edges in advance.
+ */
 
 public class ImmutableIntGraph implements IntGraph
 {
@@ -54,22 +60,44 @@ public class ImmutableIntGraph implements IntGraph
         out.fill(data);
     }
     
+    public void destroy() {
+        in.destroy();
+        out.destroy();
+    }
+    
     private class Edges
     {
+        /** Are these out- or in-edges */
         private boolean out;
-        private BitSet.Basic boundaries;
-        ExpandoArray.OfInt degrees, offsets, edges;
+        
+        /** For an offset N, its bit is set here if it starts an edge list */
+        private BitSet boundaries;
+        
+        /** Temporary count of vertex degree */
+        ExpandoArray.OfInt degrees;
+        
+        /** Edge lists */
+        ExpandoArray.OfInt edges;
+        
+        /** For a vertex V, the offset into edges where its list begins */
+        ExpandoArray.OfInt offsets;
         
         Edges(boolean out, Settings settings) {
-            degrees = new ExpandoArray.OfInt(settings);
             edges = new ExpandoArray.OfInt(settings);
             offsets = new ExpandoArray.OfInt(settings);
+            degrees = new ExpandoArray.OfInt(settings);
+            boundaries = new BitSet(settings);
             this.out = out;
+        }
+        
+        void destroy() {
+            boundaries.destroy();
+            offsets.destroy();
+            edges.destroy();
         }
         
         void fill(Data data) {
             
-            boundaries = new BitSet.Basic(numEdges+1);
             int nextOffset = 1;
             
             for (int id = 1; id <= maxId; id++) {
@@ -96,6 +124,7 @@ public class ImmutableIntGraph implements IntGraph
                 }
             });
             
+            degrees.destroy();
             degrees = null;
         }
         
@@ -114,34 +143,42 @@ public class ImmutableIntGraph implements IntGraph
         }
     }
     
+    /**
+     * Interface for specifying graph edges.  When the <code>edges</code> method is called,
+     * it should iterate each directed each and pass it to the function.  It will be called
+     * at least twice and must produce identical data.
+     */
+    
     public interface Data {
         public void edges(IntIntVoidFn fn);
     }
     
-    public static class Builder
-    {
-        public Builder(boolean onHeap)
-        {
-            
-        }
-    }
-
+    /** @see IntGraph#maxNode */
+    
     public int maxNode() {
         return maxId;
     }
 
+    /** @see IntGraph#walkInEdges */
+    
     public long walkInEdges(int v) {
         return in.walk(v);
     }
 
+    /** @see IntGraph#nextInEdge */
+    
     public long nextInEdge(long cursor) {
         return in.next(cursor);
     }
 
+    /** @see IntGraph#walkOutEdges */
+    
     public long walkOutEdges(int v) {
         return out.walk(v);
     }
 
+    /** @see IntGraph#nextOutEdge */
+    
     public long nextOutEdge(long cursor) {
         return out.next(cursor);
     }

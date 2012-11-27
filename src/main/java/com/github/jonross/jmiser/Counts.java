@@ -20,13 +20,15 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package com.github.jonross.jmiser;
 
 import gnu.trove.map.hash.TIntIntHashMap;
 
 /**
- * Various approaches to optimizing storage of direct-indexed per-object counters.  These
- * are for use cases where 99% or more of counts will fit in 2 bytes, 1 byte, or 1 bit.
+ * Optimize storage of direct-indexed per-object counters.  These are for use cases where 
+ * 99% or more of counts will fit in 1 or 2 bytes.
+ * 
+ * TODO: optional off-heap storage
  */
 
 public class Counts
@@ -36,11 +38,22 @@ public class Counts
         private final short[] values;
         private final TIntIntHashMap map;
         private final static short TOOBIG = Short.MAX_VALUE;
+        
+        /**
+         * Create a mostly two-byte counter array.
+         * 
+         * @param nIds How many IDs (0 to n-1) to allow
+         * @param outlying Multiplier for how many are expected to be outliers.
+         */
 
         public TwoByte(int nIds, double outlying) {
             values = new short[nIds];
             map = new TIntIntHashMap((int) (nIds * outlying));
         }
+        
+        /**
+         * Adjust a counter by indicated amount, returning updated value.
+         */
 
         public int adjust(int id, int amount) {
             int value = values[id];
@@ -75,10 +88,21 @@ public class Counts
         private final TIntIntHashMap map;
         private final static byte TOOBIG = Byte.MAX_VALUE;
 
+        /**
+         * Create a mostly one-byte counter array.
+         * 
+         * @param nIds How many IDs (0 to n-1) to allow
+         * @param outlying Multiplier for how many are expected to be outliers.
+         */
+        
         public OneByte(int nIds, double outlying) {
             values = new byte[nIds];
             map = new TIntIntHashMap((int) (nIds * outlying));
         }
+
+        /**
+         * Adjust a counter by indicated amount, returning updated value.
+         */
 
         public int adjust(int id, int amount) {
             int value = values[id];
@@ -106,36 +130,4 @@ public class Counts
             return value < TOOBIG ? value : map.get(id);
         }
     }
-    
-    // TODO: test me
-    
-    public static class MostlyBinary
-    {
-        private BitSet.Basic ones, mores;
-        private TIntIntHashMap map;
-        
-        public MostlyBinary(int nIds) {
-            ones = new BitSet.Basic(nIds);
-            mores = new BitSet.Basic(nIds);
-            map = new TIntIntHashMap(nIds / 100);
-        }
-        
-        public void increment(int id) {
-            if (!ones.get(id)) {
-                ones.set(id);
-            }
-            else if (!mores.get(id)) {
-                mores.set(id);
-                map.put(id, 2);
-            }
-            else {
-                map.increment(id);
-            }
-        }
-        
-        public int get(int id) {
-            return mores.get(id) ? map.get(id) : ones.get(id) ? 1 : 0;
-        }
-    }
-    
 }

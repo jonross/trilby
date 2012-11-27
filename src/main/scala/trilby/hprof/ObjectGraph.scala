@@ -22,14 +22,16 @@
 
 package trilby.hprof
 
-import trilby.util.Oddments._
-import trilby.struct.Unboxed
-import trilby.struct.Counts
-import trilby.struct.BitSet
-import trilby.struct.ExpandoArray
-import trilby.util.NumericHistogram
+import com.github.jonross.jmiser.BitSet
+import com.github.jonross.jmiser.ExpandoArray
+import com.github.jonross.jmiser.Settings
+import trilby.hprof.Heap
 import trilby.struct.IdMap3
-import trilby.struct.ImmutableIntGraph
+import trilby.util.Oddments.panic
+import trilby.util.NumericHistogram
+import com.github.jonross.jmiser.Counts
+import com.github.jonross.jmiser.ImmutableIntGraph
+import com.github.jonross.jmiser.Unboxed
 
 /**
  */
@@ -78,7 +80,7 @@ class ObjectGraph(val maxOid: Int, heap: Heap) {
         private[this] var edges: Array[Int] = null
         
         /** Has 1s at indices for which edges[oid] begins an edge list */
-        private[this] var boundaries: BitSet.Basic = null
+        private[this] var boundaries: BitSet = null
         
         /** Tracks edge counts */
         private[this] val histo = new NumericHistogram(11)
@@ -104,7 +106,7 @@ class ObjectGraph(val maxOid: Int, heap: Heap) {
             // may want them.
             
             edges = new Array[Int](numEdges+1)
-            boundaries = new BitSet.Basic(numEdges+1)
+            boundaries = new BitSet(Settings.DEFAULT)
             
             printf("Finding edge offsets\n")
 
@@ -175,10 +177,10 @@ class ObjectGraph(val maxOid: Int, heap: Heap) {
 class ObjectGraphBuilder extends ImmutableIntGraph.Data {
     
     /** Synthetic object IDs at source of each edge */
-    private[this] val refsFrom = new ExpandoArray.OfInt(10240, false)
+    private[this] val refsFrom = new ExpandoArray.OfInt(new Settings())
     
     /** Heap object IDs at destination of each edge */
-    private[this] val refsTo = new ExpandoArray.OfInt(10240, false)
+    private[this] val refsTo = new ExpandoArray.OfInt(new Settings())
     
     /** # of unmappable references encountered */
     private var _numDead = 0
@@ -200,17 +202,14 @@ class ObjectGraphBuilder extends ImmutableIntGraph.Data {
      */
     
     def mapHeapIds(idMap: IdMap3) {
-        var i = 0
-        val max = refsTo.size
-        while (i < max) {
-            val unmapped = refsTo.get(i) & 0xFFFFFFFFL
-            val mapped = idMap.map(unmapped, false)
-            refsTo.set(i, mapped)
-            if (mapped == 0) {
-                _numDead += 1
+        for (t <- 0 to 3 par)
+            for (i <- t until refsTo.size by 4) {
+                val unmapped = refsTo.get(i) & 0xFFFFFFFFL
+                val mapped = idMap.map(unmapped, false)
+                refsTo.set(i, mapped)
+                if (mapped == 0)
+                    _numDead += 1
             }
-            i += 1
-        }
     }
     
     /** Clean up for GC */

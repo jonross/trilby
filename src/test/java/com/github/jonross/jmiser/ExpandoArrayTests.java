@@ -20,58 +20,61 @@
  * SOFTWARE.
  */
 
-package trilby.test;
+package com.github.jonross.jmiser;
 
 import static org.junit.Assert.*;
 
 import java.util.Random;
-
-import trilby.struct.ExpandoArray;
-
 import org.junit.Test;
+import com.github.jonross.jmiser.ExpandoArray;
 
 public class ExpandoArrayTests
 {
     private final static Random random = new Random();
     private final static int NUM_IDS = (int) 1e6;
+    private final static Settings SETTINGS = new Settings().chunkSize(1303);
     
     @Test
     public void testBytes() {
-        ExpandoArray.OfByte a = new ExpandoArray.OfByte(1024, true);
+        ExpandoArray.OfByte a = new ExpandoArray.OfByte(SETTINGS);
         byte[] bytes = new byte[NUM_IDS];
         for (int i = 0; i < bytes.length; i++)
             a.add(bytes[i] = (byte) (random.nextInt() & 0xFF));
         for (int i = 0; i < bytes.length; i++)
             assertEquals(bytes[i], a.get(i));
+        a.destroy();
     }
     
     @Test
     public void testShorts() {
-        ExpandoArray.OfShort a = new ExpandoArray.OfShort(1024, true);
+        ExpandoArray.OfShort a = new ExpandoArray.OfShort(SETTINGS);
         short[] shorts = new short[NUM_IDS];
         for (int i = 0; i < shorts.length; i++)
             a.add(shorts[i] = (short) (random.nextInt() & 0xFFFF));
         for (int i = 0; i < shorts.length; i++)
             assertEquals(shorts[i], a.get(i));
+        a.destroy();
     }
 
     @Test
     public void testInts() {
-        ExpandoArray.OfInt a = new ExpandoArray.OfInt(1024, true);
+        ExpandoArray.OfInt a = new ExpandoArray.OfInt(SETTINGS);
         int[] ints =  new int[NUM_IDS];
         for (int i = 0; i < ints.length; i++)
             a.add(ints[i] = random.nextInt());
         for (int i = 0; i < ints.length; i++)
             assertEquals(ints[i], a.get(i));
+        a.destroy();
     }
     
     @Test
     public void testLongs() {
-        ExpandoArray.OfLong a = new ExpandoArray.OfLong(1024, true);
+        ExpandoArray.OfLong a = new ExpandoArray.OfLong(SETTINGS);
         long[] longs =  new long[NUM_IDS];
         for (int i = 0; i < longs.length; i++)
             a.add(longs[i] = random.nextLong());
         for (int i = 0; i < longs.length; i++)
             assertEquals(longs[i], a.get(i));
+        a.destroy();
     }
 }

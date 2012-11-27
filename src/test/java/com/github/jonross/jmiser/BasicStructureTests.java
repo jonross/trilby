@@ -20,16 +20,18 @@
  * SOFTWARE.
  */
 
-package trilby.test;
+package com.github.jonross.jmiser;
 
 import static org.junit.Assert.assertEquals;
-import trilby.struct.BitSet;
-import trilby.struct.Counts;
 import trilby.struct.MonotonicSequenceMap;
 
 import java.util.Random;
 
 import org.junit.Test;
+
+import com.github.jonross.jmiser.BitSet;
+import com.github.jonross.jmiser.Counts;
+import com.github.jonross.jmiser.Settings;
 
 public class BasicStructureTests
 {
@@ -63,12 +65,8 @@ public class BasicStructureTests
     
     @Test
     public void testBitSets() {
-        int nbits = 1000000;
-        verify(nbits, new BitSet.Basic(nbits));
-        verify(nbits, new BitSet.Expandable());
-    }
-    
-    private void verify(int nbits, BitSet bits) {
+        final int nbits = 1000000;
+        BitSet bits = new BitSet(Settings.DEFAULT);
         boolean[] values = new boolean[nbits];
         for (int i = 0; i < nbits; i++) {
             values[i] = Math.random() > 0.5;
