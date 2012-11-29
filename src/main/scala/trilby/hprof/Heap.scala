@@ -293,13 +293,9 @@ class Heap(val idSize: Int, val fileDate: Date) {
         println("Remapping heap IDs")
         graphBuilder.mapHeapIds(objectIdMap)
         
-        System.out.println("Building graph")
         graph = new ObjectGraph2(this, graphBuilder)
         printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
         
-        // System.out.println("Building v2 graph")
-        // new ObjectGraph2(this, graphBuilder)
-            
         graphBuilder.destroy()
         graphBuilder = null // allow GC
         

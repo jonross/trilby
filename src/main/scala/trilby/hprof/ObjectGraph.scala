@@ -25,12 +25,11 @@ package trilby.hprof
 import com.github.jonross.jmiser.BitSet
 import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
-import trilby.hprof.Heap
 import trilby.struct.IdMap3
 import trilby.util.Oddments.panic
 import trilby.util.NumericHistogram
 import com.github.jonross.jmiser.Counts
-import com.github.jonross.jmiser.ImmutableIntGraph
+import com.github.jonross.jmiser.graph.ImmutableIntGraph
 import com.github.jonross.jmiser.Unboxed
 
 /**

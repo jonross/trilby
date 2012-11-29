@@ -23,9 +23,9 @@
 package trilby.hprof
 
 import com.github.jonross.jmiser.Settings
-import trilby.struct.Dominators
 import trilby.util.Oddments._
-import com.github.jonross.jmiser.ImmutableIntGraph
+import com.github.jonross.jmiser.graph.Dominators
+import com.github.jonross.jmiser.graph.ImmutableIntGraph
 
 /**
  */

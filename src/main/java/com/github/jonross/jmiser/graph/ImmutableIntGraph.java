@@ -20,8 +20,14 @@
  * SOFTWARE.
  */
 
-package com.github.jonross.jmiser;
+package com.github.jonross.jmiser.graph;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.github.jonross.jmiser.BitSet;
+import com.github.jonross.jmiser.ExpandoArray;
+import com.github.jonross.jmiser.Settings;
 import com.github.jonross.jmiser.Unboxed.IntIntVoidFn;
 
 /**
@@ -32,8 +38,9 @@ import com.github.jonross.jmiser.Unboxed.IntIntVoidFn;
 
 public class ImmutableIntGraph implements IntGraph
 {
+    Logger log = LoggerFactory.getLogger(getClass());
+    
     private Edges in, out;
-        
     private int numEdges = 0;
     private int maxId = 0;
     
@@ -41,6 +48,8 @@ public class ImmutableIntGraph implements IntGraph
         
         in = new Edges(false, settings);
         out = new Edges(true, settings);
+        
+        log.info("Generating degree counts");
         
         data.edges(new IntIntVoidFn() {
             public void apply(int x, int y) {
@@ -55,6 +64,9 @@ public class ImmutableIntGraph implements IntGraph
                 ++numEdges;
             }
         });
+        
+        logStats("in", maxId, in.degrees);
+        logStats("out", maxId, out.degrees);
         
         in.fill(data);
         out.fill(data);
@@ -98,6 +110,7 @@ public class ImmutableIntGraph implements IntGraph
         
         void fill(Data data) {
             
+            log.info("Finding edge offsets");
             int nextOffset = 1;
             
             for (int id = 1; id <= maxId; id++) {
@@ -113,6 +126,7 @@ public class ImmutableIntGraph implements IntGraph
             }
             
             boundaries.set(nextOffset);
+            log.info("Filling edge array");
             
             data.edges(new IntIntVoidFn() {
                 public void apply(int x, int y) {
@@ -181,5 +195,17 @@ public class ImmutableIntGraph implements IntGraph
     
     public long nextOutEdge(long cursor) {
         return out.next(cursor);
+    }
+    
+    private void logStats(String inOut, int maxId, ExpandoArray.OfInt degrees) {
+        log.info("Frequency of " + inOut + "-degree across " + maxId + " nodes");
+        int[] counts = new int[11];            
+        int max = degrees.size() - 1;
+        for (int i = 1; i <= max; i++) {
+            int degree = degrees.get(i);
+            counts[degree <= 10 ? degree : 10]++;
+        }
+        for (int i = 0; i < counts.length; i++)
+            log.info(String.format("%2d%s  %10s", i, i==counts.length-1?"+":" ", counts[i]));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +20,20 @@
  * SOFTWARE.
  */
 
-package trilby.test;
+package com.github.jonross.jmiser;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.github.jonross.jmiser.ImmutableIntGraph;
-import com.github.jonross.jmiser.IntGraph;
-import com.github.jonross.jmiser.MutableIntGraph;
 import com.github.jonross.jmiser.Settings;
-import com.github.jonross.jmiser.ImmutableIntGraph.Data;
 import com.github.jonross.jmiser.Unboxed.IntIntVoidFn;
+import com.github.jonross.jmiser.graph.Dominators;
+import com.github.jonross.jmiser.graph.ImmutableIntGraph;
+import com.github.jonross.jmiser.graph.IntGraph;
+import com.github.jonross.jmiser.graph.MutableIntGraph;
+import com.github.jonross.jmiser.graph.ImmutableIntGraph.Data;
 
-import trilby.struct.Dominators;
 
 public class GraphTests
 {

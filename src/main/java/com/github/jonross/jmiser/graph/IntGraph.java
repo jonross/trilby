@@ -20,55 +20,47 @@
  * SOFTWARE.
  */
 
-package com.github.jonross.jmiser;
+package com.github.jonross.jmiser.graph;
 
 /**
- * Simple, not very space-efficient implementation of {@link IntGraph} built on {@link IntLists}.
+ * Graph API with integer-tagged nodes, minimal heap consumption (optionally off-heap),
+ * and no object allocation for iteration of edges.
  */
 
-public class MutableIntGraph implements IntGraph
-{
-    private IntLists in, out;
-    private int max = 0;
-    
-    public MutableIntGraph(Settings settings) {
-        in = new IntLists(settings);
-        out = new IntLists(settings);
-    }
-    
-    public void destroy() {
-        in.destroy();
-        out.destroy();
-    }
+public interface IntGraph {
 
-    public void edge(int from, int to) {
-        if (from == 0 || to == 0)
-            throw new IllegalArgumentException("Graph node IDs must be positive integers");
-        out.add(from, to);
-        in.add(to, from);
-        if (from > max)
-            max = from;
-        if (to > max)
-            max = to;
-    }
+    int maxNode();
     
-    public int maxNode() {
-        return max;
-    }
+    /**
+     * Traverse in-edges for vertex v, without boxing.  Usage:
+     * <pre>
+     * for (long cur = g.walkInEdges(start); cur != 0; cur = g.nextInEdge(cur)) {
+     *     int v = (int) (cur & 0xFFFFFFFF);
+     *     ...
+     * }
+     * </pre>
+     */
     
-    public long walkInEdges(int v) {
-        return in.walk(v);
-    }
+    long walkInEdges(int v);
     
-    public long nextInEdge(long cursor) {
-        return in.next(cursor);
-    }
+    /** @see #walkInEdges */
+   
+    long nextInEdge(long cursor);
     
-    public long walkOutEdges(int v) {
-        return out.walk(v);
-    }
+    /**
+     * Traverse out-edges for vertex v, without boxing.  Usage:
+     * <pre>
+     * for (long cur = g.walkOutEdges(start); cur != 0; cur = g.nextOutEdge(cur)) {
+     *     int v = (int) (cur & 0xFFFFFFFF);
+     *     ...
+     * }
+     * </pre>
+     */
     
-    public long nextOutEdge(long cursor) {
-        return out.next(cursor);
-    }
+    long walkOutEdges(int v);
+    
+    /** @see #walkOutEdges */
+   
+    long nextOutEdge(long cursor);
+    
 }

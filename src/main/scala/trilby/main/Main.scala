@@ -33,6 +33,7 @@ import trilby.query.GraphQueryParser
 import trilby.util.MappedHeapData
 import trilby.util.Oddments._
 import trilby.reports.GraphSearch2
+import org.apache.log4j.PropertyConfigurator
 
 object Main {
     
@@ -54,7 +55,7 @@ object Main {
     
     def main(args: Array[String]) = protect {
         time("Session") {
-            BasicConfigurator.configure
+            PropertyConfigurator.configure(getClass().getResourceAsStream("log4j.properties"))
             run(Options() parse args.toList)
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,6 @@
 package com.github.jonross.jmiser;
 
 import static org.junit.Assert.assertEquals;
-import trilby.struct.MonotonicSequenceMap;
-
-import java.util.Random;
 
 import org.junit.Test;
 
@@ -76,42 +73,5 @@ public class BasicStructureTests
         }
         for (int i = 0; i < nbits; i++)
             assertEquals(values[i], bits.get(i));
-    }
-    
-    @Test
-    public void testSequenceMap()
-    {
-        Random random = new Random(0);
-        int[] values = new int[10000000];
-        MonotonicSequenceMap ms = new MonotonicSequenceMap(values.length, 8);
-        int outliers = 0;
-        
-        int value = 0;
-        for (int i = 0; i < values.length; i++) {
-            
-            // skip a few, forcing gaps
-            if (random.nextInt() % 20 == 0) {
-                values[i] = -1;
-                continue;
-            }
-            
-            values[i] = value;
-            ms.add(i, value);
-            
-            // mostly add small deltas but occasionally a big one
-            if (random.nextInt() % 100 == 0) {
-                value += 300;
-                outliers++;
-            }
-            else {
-                value += Math.abs(random.nextInt() % 25);
-            }
-        }
-        
-        for (int i = 0; i < values.length; i++)  {
-            assertEquals(values[i], ms.get(i));
-        }
-        
-        System.out.printf("outliers inserted=%d stored=%d\n", outliers, ms.outliers());
     }
 }

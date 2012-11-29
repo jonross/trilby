@@ -20,37 +20,58 @@
  * SOFTWARE.
  */
 
-package com.github.jonross.jmiser;
+package com.github.jonross.jmiser.graph;
+
+import com.github.jonross.jmiser.IntLists;
+import com.github.jonross.jmiser.Settings;
 
 /**
- * Bitset backed by an {@link ExpandoArray}.
+ * Simple, not very space-efficient implementation of {@link IntGraph} built on {@link IntLists}.
  */
 
-public class BitSet
+public class MutableIntGraph implements IntGraph
 {
-    private final static int SHIFT = 6; // 1 << SHIFT = 64 bits in a long
-    private final ExpandoArray.OfLong bits;
+    private IntLists in, out;
+    private int max = 0;
     
-    public BitSet(Settings settings) {
-        bits = new ExpandoArray.OfLong(settings.chunkSize(settings.chunkSize() / 8));
+    public MutableIntGraph(Settings settings) {
+        in = new IntLists(settings);
+        out = new IntLists(settings);
     }
     
     public void destroy() {
-        bits.destroy();
+        in.destroy();
+        out.destroy();
+    }
+
+    public void edge(int from, int to) {
+        if (from == 0 || to == 0)
+            throw new IllegalArgumentException("Graph node IDs must be positive integers");
+        out.add(from, to);
+        in.add(to, from);
+        if (from > max)
+            max = from;
+        if (to > max)
+            max = to;
     }
     
-    public void set(int bit) {
-        int i = bit >> SHIFT;
-        bits.set(i, bits.get(i) | (1L << bit));
+    public int maxNode() {
+        return max;
     }
-
-    public void clear(int bit) {
-        int i = bit >> SHIFT;
-        bits.set(i, bits.get(i) & ~(1L << bit));
+    
+    public long walkInEdges(int v) {
+        return in.walk(v);
     }
-
-    public boolean get(int bit) {
-        int i = bit >> SHIFT;
-        return (bits.get(i) & (1L << bit)) != 0L;
+    
+    public long nextInEdge(long cursor) {
+        return in.next(cursor);
+    }
+    
+    public long walkOutEdges(int v) {
+        return out.walk(v);
+    }
+    
+    public long nextOutEdge(long cursor) {
+        return out.next(cursor);
     }
 }
