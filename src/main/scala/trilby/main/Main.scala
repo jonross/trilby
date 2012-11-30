@@ -28,7 +28,6 @@ import trilby.hprof.Heap
 import trilby.hprof.HProfReader
 import trilby.reports.ClassHistogram
 import trilby.util.ObjectSet
-import trilby.util.StreamHeapData
 import trilby.query.GraphQueryParser
 import trilby.util.MappedHeapData
 import trilby.util.Oddments._
@@ -55,7 +54,7 @@ object Main {
     
     def main(args: Array[String]) = protect {
         time("Session") {
-            PropertyConfigurator.configure(getClass().getResourceAsStream("log4j.properties"))
+            PropertyConfigurator.configure(getClass.getResourceAsStream("log4j.properties"))
             run(Options() parse args.toList)
         }
     }

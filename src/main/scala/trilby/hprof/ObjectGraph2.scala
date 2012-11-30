@@ -27,6 +27,13 @@ import trilby.util.Oddments._
 import com.github.jonross.jmiser.graph.Dominators
 import com.github.jonross.jmiser.graph.ImmutableIntGraph
 
+import com.github.jonross.jmiser.BitSet
+import com.github.jonross.jmiser.ExpandoArray
+
+import trilby.struct.IdMap3
+import com.github.jonross.jmiser.Counts
+import com.github.jonross.jmiser.Unboxed
+
 /**
  */
 
@@ -55,4 +62,71 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
         
     def inCounts = 0 // TODO fix
     def outCounts = 0 // TODO fix
+}
+
+/**
+ * Accumulates raw information about object references and generates
+ * {@link ObjectGraph}, above.
+ * 
+ * TODO: move to Int in signature, now using compressed HIDs.
+ */
+
+class ObjectGraphBuilder extends ImmutableIntGraph.Data {
+    
+    /** Synthetic object IDs at source of each edge */
+    private[this] val refsFrom = new ExpandoArray.OfInt(new Settings())
+    
+    /** Heap object IDs at destination of each edge */
+    private[this] val refsTo = new ExpandoArray.OfInt(new Settings())
+    
+    /** # of unmappable references encountered */
+    private var _numDead = 0
+    
+    /**
+     * Add a reference.  We don't map the target heap ID to a synthetic object ID at this
+     * time because that would make the assigned IDs out of order from their appearance
+     * in the heap dump, plus also obstruct multi-threading of instance scans at some
+     * future point (because of contention for the ID map.)
+     */
+    
+    def addRef(fromId: Int, toId: Long) {
+        refsFrom.add(fromId)
+        refsTo.add(toId.asInstanceOf[Int])
+    }
+    
+    /**
+     * Map reference target heap IDs to object IDs.
+     */
+    
+    def mapHeapIds(idMap: IdMap3) {
+        for (t <- 0 to 3 par)
+            for (i <- t until refsTo.size by 4) {
+                val unmapped = refsTo.get(i) & 0xFFFFFFFFL
+                val mapped = idMap.map(unmapped, false)
+                refsTo.set(i, mapped)
+                if (mapped == 0)
+                    _numDead += 1
+            }
+    }
+    
+    /** Clean up for GC */
+    
+    def destroy() {
+        refsFrom.destroy()
+        refsTo.destroy()
+    }
+    
+    /* Return # of references */
+    def size = refsFrom.size
+    
+    /** Return the number of unmappable references */
+    def numDead = _numDead
+    
+    def edges(fn: Unboxed.IntIntVoidFn) =
+        for (i <- (0 until refsFrom.size)) {
+            val from = refsFrom.get(i)
+            val to = refsTo.get(i)
+            if (to != 0)
+                fn(from, to)
+        }
 }

@@ -22,8 +22,11 @@
 
 package trilby.test;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class GenHeap
@@ -31,10 +34,16 @@ public class GenHeap
     private Map<Integer,Object> m = Maps.newHashMap();
     
     {
-        class Thing1 {@SuppressWarnings("unused") int x;};
+        Random random = new Random();
+        List<String> list = Lists.newArrayList();
         
-        for (int i = 0; i < 10; i++)
-            m.put(i, new Thing1());
+        for (int i = 0; i < 1000; i++) {
+            list.add(String.valueOf(i));
+            if (random.nextInt(10) == 0) {
+                m.put(i, list);
+                list = Lists.newArrayList();
+            }
+        }
         
         /*
         for (int i = 0; i < 10000; i++) {
