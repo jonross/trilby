@@ -67,9 +67,9 @@ object Oddments {
      * "com/foo/Bar" -> "com.foo.Bar"
      */
     
-    def translate(name: String): String = name match {
+    def demangle(name: String): String = name match {
         case refarray(dimen, className) =>
-            translate(className) + "[]" * dimen.length()
+            demangle(className) + "[]" * dimen.length()
         case primarray(dimen, tag) => 
             tagmap.get(tag) + "[]" * dimen.length()
         case _ if name(0) == '[' => 
@@ -77,26 +77,6 @@ object Oddments {
             name
         case _ =>
             name.replace('/', '.')
-    }
-    
-    def demangle(name: String): String = {
-        var name1 = if (name.endsWith(";")) name.substring(0, name.length()-1) else name
-        name1 = name1.replace('/', '.')
-        if (!name.startsWith("["))
-            return name1
-        while (name1.startsWith("["))
-            name1 = name1.substring(1) + "[]"
-        "" + (name1.charAt(0) match {
-            case 'Z' => "boolean"
-            case 'C' => "char"
-            case 'F' => "float"
-            case 'D' => "double"
-            case 'B' => "byte"
-            case 'S' => "short"
-            case 'I' => "int"
-            case 'J' => "long"
-            case 'L' => ""
-        }) + name1.substring(1)
     }
     
     private val refarray = """(\[+)L(.+);""".r

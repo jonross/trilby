@@ -1,4 +1,4 @@
-/* Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+/* Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
     private[this] var objectIdMap = new IdMap3()
     
     /** Static references get special treatment after heap is read */
-    private[this] val staticRefs = new ExpandoArray.OfLong(new Settings().chunkSize(1024))
+    private[this] var staticRefs = new ExpandoArray.OfLong(new Settings().chunkSize(1024))
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
@@ -274,6 +274,9 @@ class Heap(val idSize: Int, val fileDate: Date) {
             }
             addReference(fake, toObjectHid)
         }
+        
+        staticRefs.destroy()
+        staticRefs = null // allow GC
         
         System.out.println("Rebasing classes")
         classes.rebase(maxId)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -122,8 +122,8 @@ class ClassInfo {
     
     def getForObjectId(objectId: Int) = {
         val classId =
-            if (finalObjectMap != null) finalObjectMap.get(objectId) 
-            else initialObjectMap.get(objectId)
+            if (finalObjectMap != null) finalObjectMap get objectId 
+            else initialObjectMap get objectId
         val classDef = getByClassId(classId)
         if (classDef == null) {
             panic("Internal error: no class for ID " + objectId)
@@ -150,8 +150,6 @@ class ClassInfo {
             nextClassId += 1
         }
         
-        getByName("java.util.HashMap$Entry").refOffsets.foreach(println)
-        
         finalObjectMap = new Counts.TwoByte(maxId + 1, 0.001)
         for (objectId <- 1 to maxId)
             finalObjectMap.adjust(objectId, remap(initialObjectMap.get(objectId)))
@@ -163,6 +161,7 @@ class ClassInfo {
 
 /**
  * One of these tracks each class defined in the heap dump.
+ * TODO: make immutable?
  */
 
 class ClassDef(/** Who holds this def */

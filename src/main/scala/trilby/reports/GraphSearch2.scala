@@ -31,6 +31,12 @@ import trilby.query.Target
 import gnu.trove.map.hash.TIntIntHashMap
 import gnu.trove.map.hash.TIntByteHashMap
 
+/**
+ * Actual graph search code.  I would love for this to be more idiomatic + replace the
+ * unrolled stack with @tailrec methods, but so far the amount of generated garbage is
+ * prohibitive for large heaps... maybe Java 7 can fix this, its ParNew collector is faster.
+ */
+
 class GraphSearch2(heap: Heap, query: GraphQuery) {
     
     // Rest of targets determine where to go

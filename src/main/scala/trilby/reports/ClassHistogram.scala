@@ -45,8 +45,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     private[this] val knownIds = new ObjectSet(heap.maxId)
     
     type T = ClassHistogram
-    def +(that: ClassHistogram) =
-        this
+    def +(that: ClassHistogram) = this // TODO: fix this
         
     def add(id: Int, classDef: ClassDef, info: Long) {
         var slot = counts.get(classDef.classId)
@@ -72,7 +71,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
             else if (delta < 0) false
             else a.classDef.name.compareTo(b.classDef.name) < 0
         } filter {
-            _.nbytes >= 0 // 1024
+            _.nbytes >= 0 // was 1024; put back?
         }
         
         printf("%d counts %d slots\n", counts.size, slots.size)

@@ -63,4 +63,10 @@ public interface IntGraph {
    
     long nextOutEdge(long cursor);
     
+    /**
+     * Release off-heap memory.
+     */
+    
+    void destroy();
+    
 }

@@ -152,7 +152,9 @@ public class GraphTests
         int[] idom = d.get();
         for (int i = 1; i < doms.length; i++)
             assertEquals(doms[i], idom[i]);
+        
         d.destroy();
+        g.destroy();
     }
     
     private static Integer[] ints(Integer...ints) {

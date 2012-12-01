@@ -30,8 +30,6 @@ import trilby.util.Oddments._
 
 class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
-    private[this] var numRecords = 0
-    private[this] var buf = new Array[Byte](1000)
     private[this] val classes = heap.classes
     
     // Heap dump segment record types
@@ -52,6 +50,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     val MAX_SUBRECORD_TYPE = 0xff
     
     def read() = {
+        var numRecords = 0
         val end = data.position + length
         while (data.position < end) {
             val tag = data.readUByte()
@@ -172,85 +171,30 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         
         heap.addInstance(hid, classHid, offset, size + heap.idSize)
         
-        if (size > 0) {
-            data.demand(size)
-            scanInstance2(heap.mapId(hid), classHid, 0, size)
-        }
-    }
-    
-    private def scanInstance2(tid: Int, classHid: Long, dummy: Int, remain: Int) {
-        val classDef = classes.getByHeapId(classHid)
-        if (classDef == null)
-            panic("No class def with id " + classHid)
-        var i = 0
-        val pos = data.position
-        val offsets = classDef.refOffsets
-        while (i < offsets.length) {
-            val toId = data.readId(pos + offsets(i).offset)
-            if (toId != 0)
-                heap.addReference(tid, toId)
-            i += 1
-        }
-        data.skip(remain)
-    }
-    
-    /**
-     * Scan a class instance and record references to other instances.  Recursive
-     * invocations handle parent class fields.
-     */
-
-    private def scanInstance(tid: Int, classHid: Long, accum: Int, remain: Int) {
-
+        if (size <= 0) return
+        data.demand(size)
+        val oid = heap mapId hid
+        
         // Class lookup will fail for the superclass ID of java.lang.Object, but
         // at that point remain should == 0 and we will have already returned.
 
         val classDef = classes.getByHeapId(classHid)
         if (classDef == null)
             panic("No class def with id " + classHid)
-
-        // Accumulate a skip size in between references, to minimize calls to
-        // skipBytes.
-        
-        var f = 0
-        val fields = classDef.fields
-        var _accum = accum
-        var _remain = remain
-        
-        val showIt = classDef.name equals "java.net.URL"
-        
-        while (f < fields.length) {
-            val field = fields(f)
-            val size = field.jtype.size
-            _remain -= size
-            if (!field.jtype.isRef) {
-                // below we skip over N consecutive non-references at once
-                _accum += size
-            }
-            else {
-                if (_accum > 0) {
-                    // skip count accumulated since last reference seen
-                    data.skip(_accum)
-                    _accum = 0
-                }
-                if (showIt) {
-                    // printf("Read " + field + " at " + data.position + "\n")
-                }
-                val toId = data.readId()
-                if (toId != 0) {
-                    heap.addReference(tid, toId)
-                }
-            }
-            f += 1
+            
+        // We really only care about references right now.
+            
+        var i = 0
+        val pos = data.position
+        val offsets = classDef.refOffsets
+        while (i < offsets.length) {
+            val toId = data.readId(pos + offsets(i).offset)
+            if (toId != 0)
+                heap.addReference(oid, toId)
+            i += 1
         }
-
-        if (_remain > 0 && classDef.superHeapId != classDef.heapId) {
-            // scan member fields of parent class
-            scanInstance(tid, classDef.superHeapId, _accum, _remain)
-        }
-        else if (_accum > 0) {
-            // nothing more to scan, skip leftovers
-            data.skip(_accum)
-        }
+        
+        data skip size
     }
     
     private def readArray(isObjects: Boolean) {

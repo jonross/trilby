@@ -58,7 +58,7 @@ public class Counts
         public int adjust(int id, int amount) {
             int value = values[id];
             if (value == TOOBIG) {
-                value = map.adjustOrPutValue(id, amount, 0);
+                value = map.adjustOrPutValue(id, amount, amount);
                 if (value < TOOBIG) {
                     values[id] = (short) value;
                     map.remove(id);
@@ -107,7 +107,7 @@ public class Counts
         public int adjust(int id, int amount) {
             int value = values[id];
             if (value == TOOBIG) {
-                value = map.adjustOrPutValue(id, amount, 0);
+                value = map.adjustOrPutValue(id, amount, amount);
                 if (value < TOOBIG) {
                     values[id] = (byte) value;
                     map.remove(id);

@@ -27,7 +27,6 @@ import trilby.util.Oddments._
 import com.github.jonross.jmiser.graph.Dominators
 import com.github.jonross.jmiser.graph.ImmutableIntGraph
 
-import com.github.jonross.jmiser.BitSet
 import com.github.jonross.jmiser.ExpandoArray
 
 import trilby.struct.IdMap3
@@ -43,6 +42,7 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
     val g = new ImmutableIntGraph(builder, Settings.DEFAULT)
     printf("Finding dominators\n")
     val dom = new Dominators(g)
+    dom.destroy()
     
     def forEachReferrer(oid: Int, fn: Int => Unit) {
         var cur = g.walkInEdges(oid)
