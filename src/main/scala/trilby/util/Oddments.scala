@@ -21,23 +21,28 @@
  */
 
 package trilby.util
-import com.google.common.base.Splitter
 import java.io.PrintStream
+
+import org.slf4j.LoggerFactory
+
+import com.google.common.base.Splitter
 
 object Oddments {
     
-    def protect[T](block: => T) { try { block } catch {
-        case Error(msg, e, status) =>
-            warn(msg)
-            if (e != null)
-                e printStackTrace System.err
-            if (status >= 0)
-                System exit status
-        case e: Exception =>
-            warn("Unexpected exception")
-            e printStackTrace System.err
-    } }
-    
+    private[this] val log = LoggerFactory.getLogger(getClass)
+        
+    def protect[T](block: => T) { 
+        val log = LoggerFactory.getLogger(getClass)
+        try { block } catch {
+            case Error(msg, e, status) =>
+                log.error(msg, e)
+                if (status >= 0)
+                    System exit status
+            case e: Exception =>
+                log.error("Unexpected exception", e)
+        } 
+    }
+        
     case class Error(msg: String, e: Exception, status: Int) extends Exception(msg, e)
     
     def die(msg: String) = throw Error(msg, null, 1)
@@ -45,21 +50,14 @@ object Oddments {
     def panic(msg: String, e: Exception = null) = throw Error(msg, e, -1)
     
     def time[T](task: String)(block: => T) = {
+        val log = LoggerFactory.getLogger("trilby.timing")
         val start = System.currentTimeMillis
         val result = block
         val end = System.currentTimeMillis
-        info("%s took %d ms", task, end - start)
+        log.info("%s took %d ms".format(task, end - start))
         result
     }
     
-    // TODO: use logger
-    
-    def info(fmt: String, args: Any*) = output(System.out, fmt.format(args: _*))
-    def warn(fmt: String, args: Any*) = output(System.err, fmt.format(args: _*))
-    
-    def output(out: PrintStream, s: String) =
-        out.print(s)
-        
     /**
      * Demangle heap class names, e.g.<br/>
      * "[[I" -> "int[][]"<br/>
@@ -73,7 +71,7 @@ object Oddments {
         case primarray(dimen, tag) => 
             tagmap.get(tag) + "[]" * dimen.length()
         case _ if name(0) == '[' => 
-            warn("Unparseable array type: " + name)
+            log.warn("Unparseable array type: " + name)
             name
         case _ =>
             name.replace('/', '.')

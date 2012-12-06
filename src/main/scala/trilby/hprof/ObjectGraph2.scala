@@ -22,25 +22,24 @@
 
 package trilby.hprof
 
-import com.github.jonross.jmiser.Settings
-import trilby.util.Oddments._
 import com.github.jonross.jmiser.graph.Dominators
 import com.github.jonross.jmiser.graph.ImmutableIntGraph
-
 import com.github.jonross.jmiser.ExpandoArray
-
-import trilby.struct.IdMap3
-import com.github.jonross.jmiser.Counts
+import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Unboxed
+import trilby.struct.IdMap3
+import org.slf4j.LoggerFactory
 
 /**
  */
 
 class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
     
-    printf("Building graph\n")
+    private[this] val log = LoggerFactory.getLogger(getClass)
+    
+    log.info("Building graph")
     val g = new ImmutableIntGraph(builder, Settings.DEFAULT)
-    printf("Finding dominators\n")
+    log.info("Finding dominators")
     val dom = new Dominators(g)
     dom.destroy()
     

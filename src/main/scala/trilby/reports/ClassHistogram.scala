@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,9 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
 import trilby.hprof.Heap
 import trilby.query.QueryFunction
-import trilby.util.ObjectSet
 import trilby.query.Renderable
+import trilby.util.ObjectSet
+import org.slf4j.LoggerFactory
 
 /**
  * Given any {@link ObjectSet}, report on the # of instances of each class and
@@ -43,6 +44,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     
     // Which object IDs are in the histogram
     private[this] val knownIds = new ObjectSet(heap.maxId)
+    private[this] val log = LoggerFactory.getLogger(getClass)
     
     type T = ClassHistogram
     def +(that: ClassHistogram) = this // TODO: fix this
@@ -74,7 +76,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
             _.nbytes >= 0 // was 1024; put back?
         }
         
-        printf("%d counts %d slots\n", counts.size, slots.size)
+        out.write("%d counts %d slots\n".format(counts.size, slots.size))
         var totalCount = 0
         var totalBytes = 0L
         

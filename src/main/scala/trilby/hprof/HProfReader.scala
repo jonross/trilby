@@ -24,9 +24,9 @@ package trilby.hprof
 
 import java.io.EOFException
 import java.util.Date
-
 import trilby.util._
 import trilby.util.Oddments._
+import org.slf4j.LoggerFactory
 
 /**
  * HPROF binary format reader based on
@@ -38,6 +38,7 @@ class HProfReader (data: MappedHeapData) {
     private[this] var heap: Heap = null
     private[this] var numRecords = 0
     private[this] var buf = new Array[Byte](1000)
+    private[this] val log = LoggerFactory.getLogger(getClass)
     
     // Heap record types
     
@@ -97,7 +98,7 @@ class HProfReader (data: MappedHeapData) {
             numRecords += 1
         }
         
-        println("Read " + numRecords + " dump records")
+        log.info("Read " + numRecords + " dump records")
         heap.optimize()
         heap
     }
@@ -141,8 +142,8 @@ class HProfReader (data: MappedHeapData) {
     }
     
     private def handleHeapSection(length: Long) {
-        printf("Heap dump or segment of %d MB at offset %d\n",
-                length / 1024 / 1024, data.position)
+        log.info("Heap dump or segment of %d MB at offset %d\n".format(
+                 length / 1024 / 1024, data.position))
         val segmentReader = new SegmentReader(heap, data, length)
         numRecords += segmentReader.read()
         return

@@ -29,6 +29,7 @@ import com.google.common.primitives.Ints
 import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Counts
+import org.slf4j.LoggerFactory
 
 class ClassInfo {
 
@@ -49,6 +50,8 @@ class ClassInfo {
     
     /** Class ID for next ClassDef we create. */
     private[this] var nextClassId = 1
+    
+    private[this] val log = LoggerFactory.getLogger(getClass)
     
     /**
      * @param demangled class name
@@ -137,6 +140,8 @@ class ClassInfo {
      */
     
     def rebase(maxId: Int) {
+        
+        log.info("Rebasing classes")
         
         val allClasses = getAll.sortWith((a, b) => a.count > b.count)
         var remap = new Array[Int](allClasses.length + 2) // IDs are 1-based

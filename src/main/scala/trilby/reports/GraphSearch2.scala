@@ -22,14 +22,13 @@
 
 package trilby.reports
 
+import gnu.trove.map.hash.TIntByteHashMap
+import gnu.trove.map.hash.TIntIntHashMap
 import trilby.hprof.Heap
 import trilby.query.GraphQuery
-import trilby.util.ObjectSet
-import trilby.struct.IntStack
 import trilby.query.Target
-
-import gnu.trove.map.hash.TIntIntHashMap
-import gnu.trove.map.hash.TIntByteHashMap
+import trilby.struct.IntStack
+import org.slf4j.LoggerFactory
 
 /**
  * Actual graph search code.  I would love for this to be more idiomatic + replace the
@@ -47,6 +46,8 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
     
     // Object IDs to be passed to the collection function
     private[this] val funArgs = new Array[Int](query.argIndices.size)
+    
+    private[this] val log = LoggerFactory.getLogger(getClass)
     
     /**
      * Build a chain of target finders, each referring to the next.
@@ -97,6 +98,8 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         
         // Function for use by forEachReferrer/Referee
         val findNext = (id: Int) => next check id
+        
+        private[this] val log = LoggerFactory.getLogger(getClass)
         
         // TODO: do wildcard matching differently
  

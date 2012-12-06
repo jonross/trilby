@@ -32,6 +32,9 @@ import gnu.trove.map.hash.TLongIntHashMap
 import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Counts
+import gnu.trove.map.TIntByteMap
+import gnu.trove.map.hash.TIntByteHashMap
+import org.slf4j.LoggerFactory
 
 class Heap(val idSize: Int, val fileDate: Date) {
     
@@ -62,6 +65,12 @@ class Heap(val idSize: Int, val fileDate: Date) {
     /** After heap read, {@link #initialSizes} is optimized to this */
     private[this] var finalSizes: Counts.TwoByte = null
     
+    /** Temporary object, records heap IDs of GC roots */
+    private[this] var tmpGCRoots = new ExpandoArray.OfLong(new Settings())
+    
+    /** After heap read, {@link #tmpGCRoots} is mapped to these */
+    private[this] var gcRoots: TIntByteMap = null
+    
     /** TODO: optimize this */
     private[this] val offsets = new ExpandoArray.OfLong(new Settings())
     
@@ -77,12 +86,14 @@ class Heap(val idSize: Int, val fileDate: Date) {
     /** Highest offset seen by addInstance */
     private[this] var highestOffset = 0L
     
+    private val log = LoggerFactory.getLogger(getClass)
+    
     /**
      * Record a GC root. TODO: make work 
      */
 
     def addGCRoot(id: Long, desc: String) {
-        // tmp.gcRoots.add(idMap.get(id)) tmp.gcRootTypes.add(rootType)
+        tmpGCRoots add id
     }
 
     /** 
@@ -250,8 +261,8 @@ class Heap(val idSize: Int, val fileDate: Date) {
 
     def optimize() {
 
-        System.out.println("Got " + classes.count + " classes")
-        System.out.println("Got " + maxId + " instances")
+        log.info("Read " + classes.count + " classes")
+        log.info("Read " + maxId + " instances")
         
         // Fabricate a class object to hold static references for each class.  This
         // is done after the heap read is complete so we can guarantee unique HIDs.
@@ -278,34 +289,59 @@ class Heap(val idSize: Int, val fileDate: Date) {
         staticRefs.destroy()
         staticRefs = null // allow GC
         
-        System.out.println("Rebasing classes")
         classes.rebase(maxId)
         
         // Sizes can be compressed as most fit in two bytes.
         
-        System.out.println("Compressing sizes")
+        log.info("Compressing sizes")
         finalSizes = new Counts.TwoByte(maxId + 1, 0.01)
-        for (oid <- 1 to maxId) {
+        for (oid <- 1 to maxId)
             finalSizes.adjust(oid, initialSizes.get(oid))
-        }
         
         initialSizes.destroy()
-        initialSizes = null // allow gc
+        initialSizes = null // allow GC
         
-        println("Remapping heap IDs")
+        log.info("Remapping heap IDs")
         graphBuilder.mapHeapIds(objectIdMap)
         
-        graph = new ObjectGraph2(this, graphBuilder)
-        printf("Got %d references, %d dead\n", graphBuilder.size, graphBuilder.numDead)
+        var goodRoots = 0
+        var badRoots = 0
+        gcRoots = new TIntByteHashMap()
         
-        graphBuilder.destroy()
-        graphBuilder = null // allow GC
+        for (i <- 0 until tmpGCRoots.size) {
+            val rootHid = tmpGCRoots get i
+            val rootOid = objectIdMap.map(rootHid, false)
+            if (rootOid != 0) { 
+                gcRoots.put(rootOid, 0)
+                goodRoots += 1
+            }
+            else {
+                badRoots += 1
+            }
+        }
+        
+        tmpGCRoots.destroy()
+        tmpGCRoots = null // allow GC
+        
+        // Not clear this warning is meaningful... most GC roots appear unmappable,
+        // perhaps because only a few of the root records match heap objects.
+        
+        if (badRoots == 0)
+            log.info(goodRoots + " GC roots")
+        else
+            log.warn((goodRoots + badRoots) + " GC roots, " + badRoots + " bad")
         
         // As of this point we no longer need the ID mapping.
         
         val m = maxId
         _maxId = () => m
-        objectIdMap = null // allow gc
+        objectIdMap = null // allow GC
+        
+        graph = new ObjectGraph2(this, graphBuilder)
+        log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
+        
+        graphBuilder.destroy()
+        graphBuilder = null // allow GC
     }
     
     // TODO: comments
