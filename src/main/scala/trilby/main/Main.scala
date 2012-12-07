@@ -34,16 +34,23 @@ import trilby.util.Oddments._
 import trilby.reports.GraphSearch2
 import org.apache.log4j.PropertyConfigurator
 import jline.console.ConsoleReader
+import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.server.handler.AbstractHandler
+import org.eclipse.jetty.server.Request
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 object Main {
     
     case class Options(val histogram: Boolean = false,
                        val interactive: Boolean = false,
+                       val web: Boolean = false,
                        val heapFile: File = null) {
         
         def parse(options: List[String]): Options = options match {
             case "--histo" :: _ => copy(histogram = true) parse options.tail
             case "--inter" :: _ => copy(interactive = true) parse options.tail
+            case "--web" :: _ => copy(web = true) parse options.tail
             case x :: _ if x(0) == '-' => die("Unknown option: " + x)
             case x :: Nil => copy(heapFile = new File(x))
             case _ => die("Missing or extraneous heap filenames")
@@ -80,6 +87,14 @@ object Main {
             }
         }
         
+        else if (options.web) {
+            println("Starting web server")
+            val server = new Server(7070)
+            server.setHandler(new WebHandler())
+            server.start()
+            server.join()
+        }
+        
         else if (options.histogram) {
             val report = new ClassHistogram(heap, false)
             heap forEachInstance (id => {
@@ -93,6 +108,16 @@ object Main {
         
         else {
             die("Nothing to do")
+        }
+    }
+    
+    class WebHandler extends AbstractHandler {
+        def handle(target: String, baseReq: Request,
+                   req: HttpServletRequest, rsp: HttpServletResponse) {
+            rsp setContentType "text/html;charset=utf-8"
+            rsp setStatus HttpServletResponse.SC_OK
+            baseReq setHandled true
+            rsp.getWriter println "<h1>Hello World</h1>"
         }
     }
 }
