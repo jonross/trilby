@@ -22,13 +22,18 @@
 
 package trilby.util
 import java.io.PrintStream
-
 import org.slf4j.LoggerFactory
-
 import com.google.common.base.Splitter
+import org.codehaus.jackson.JsonFactory
+import java.io.Writer
+import java.io.StringWriter
+import org.codehaus.jackson.JsonGenerator
 
 object Oddments {
     
+    def using[C <: {def close(): Unit}, B](resource: C)(fn: C => B): B =
+        try { fn(resource) } finally { resource.close() }                
+        
     private[this] val log = LoggerFactory.getLogger(getClass)
         
     def protect[T](block: => T) { 
@@ -81,4 +86,6 @@ object Oddments {
     private val primarray = """(\[+)([ZCFDBSIJ])""".r
     private val tagmap = Splitter.on(',').withKeyValueSeparator("=").
         split("Z=boolean,C=char,F=float,D=double,B=byte,S=short,I=int,J=long")
+        
+
 }

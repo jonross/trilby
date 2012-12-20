@@ -39,8 +39,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler
 import org.eclipse.jetty.server.Request
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import com.google.common.io.ByteStreams
+import trilby.reports.FullHistogram
 
 object Main {
+    
+    private var heap: Heap = null
     
     case class Options(val histogram: Boolean = false,
                        val interactive: Boolean = false,
@@ -70,7 +74,7 @@ object Main {
     def run(options: Options) {
 
         val data = new MappedHeapData(options.heapFile)
-        val heap = new HProfReader(data).read
+        heap = new HProfReader(data).read
         
         if (options.interactive) {
             println("Entering interactive mode")
@@ -90,7 +94,12 @@ object Main {
         else if (options.web) {
             println("Starting web server")
             val server = new Server(7070)
-            server.setHandler(new WebHandler())
+            server.setHandler(new AbstractHandler {
+                def handle(target: String, baseReq: Request,
+                           req: HttpServletRequest, rsp: HttpServletResponse) {
+                    new WebAPI(heap, baseReq, req, rsp).handle()
+                }
+            })
             server.start()
             server.join()
         }
@@ -108,16 +117,6 @@ object Main {
         
         else {
             die("Nothing to do")
-        }
-    }
-    
-    class WebHandler extends AbstractHandler {
-        def handle(target: String, baseReq: Request,
-                   req: HttpServletRequest, rsp: HttpServletResponse) {
-            rsp setContentType "text/html;charset=utf-8"
-            rsp setStatus HttpServletResponse.SC_OK
-            baseReq setHandled true
-            rsp.getWriter println "<h1>Hello World</h1>"
         }
     }
 }

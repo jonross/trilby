@@ -30,6 +30,7 @@ import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Counts
 import org.slf4j.LoggerFactory
+import scala.collection.JavaConversions._
 
 class ClassInfo {
 
@@ -162,6 +163,13 @@ class ClassInfo {
         initialObjectMap.destroy()
         initialObjectMap = null // allow GC
     }
+    
+    /**
+     * Support for comprehensions
+     */
+    
+    def map[T](fn: ClassDef => T) =
+        for (c <- byName.values) yield fn(c)
 }
 
 /**

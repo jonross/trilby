@@ -30,6 +30,7 @@ import trilby.query.QueryFunction
 import trilby.query.Renderable
 import trilby.util.ObjectSet
 import org.slf4j.LoggerFactory
+import scala.collection.JavaConversions._
 
 /**
  * Given any {@link ObjectSet}, report on the # of instances of each class and
@@ -41,6 +42,9 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
 {
     class Counts(val classDef: ClassDef, var count: Int = 0, var nbytes: Long = 0L) { }
     val counts = new TIntObjectHashMap[Counts]
+
+    def map[T](fn: Counts => T) =
+        for (c <- counts.valueCollection) yield fn(c)
     
     // Which object IDs are in the histogram
     private[this] val knownIds = new ObjectSet(heap.maxId)
@@ -96,4 +100,11 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
             out.write("%10d %10d total\n".format(totalCount, totalBytes))
     }
 
+}
+
+class FullHistogram(heap: Heap) extends ClassHistogram(heap, false) {
+    heap forEachInstance (id => {
+        val classDef = heap.classes.getForObjectId(id)
+        add(id, classDef, heap.getObjectSize(id))
+    })
 }
