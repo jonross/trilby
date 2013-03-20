@@ -1,3 +1,4 @@
+//
 
 var ty = {
 
@@ -5,10 +6,6 @@ var ty = {
         
     },
     
-    init: function() {
-        ty.query("histo(x) from Object x")
-    },
-
     query: function(s) {
         ty.request("query?q=" + s)
     },
@@ -31,9 +28,16 @@ var ty = {
         }
     },
     
-    pendingRequests: []
+    pendingRequests: [],
+    
+    addTab: function(name, content) {
+        var id = $.uid(), div = $("<div></div>", { id: id }).append(content)
+        $("#tabset").append(div).tabs('add', "#" + id, name)
+    }
 
 }
+
+// Classes for response handling
 
 $.Class("ty.Error", 
 {},
@@ -61,15 +65,55 @@ $.Class("ty.ClassDefs",
     }
 })
 
+$.Class("ty.DeprecatedHisto",
+{},
+{
+    run: function(payload) {
+        var thead = $("<thead/>").append($.rowth("Class", "Count", "Bytes"))
+        var tbody = $("<tbody/>")
+        var table = $("<table class='tytable'/>").append(thead).append(tbody)
+        $(payload).each(function(i, entry) {
+            var classDef = ty.classDefs[entry.id]
+            var span = "<span>" + classDef.name + "</span>"
+            span += "<span class='ui-icon ui-icon-triangle-1-e'></span>"
+            span += "<span class='ui-icon ui-icon-arrowreturnthick-1-e'></span>"
+            span += "<span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>"
+            tbody.append($.rowtd(span, entry.count, entry.nbytes))
+        })
+        ty.addTab("all classes", table)
+    }
+})
+
 $.Class("ty.Histo",
 {},
 {
     run: function(payload) {
-        var table = $("<table></table>")
+        var table = new ty.Table("all classes")
         $(payload).each(function(i, entry) {
-            var classDef = ty.classDefs[entry.id]
-            table.append($.row(classDef.name, entry.count, entry.nbytes))
+            table.addClassDef(entry)
         })
-        $("body").append(table)
     }
 })
+
+// Class for model/view
+
+$.Class("ty.Table",
+{},
+{
+    init: function(tabName) {
+        var thead = $("<thead/>").append($.rowth("Class", "Count", "Bytes"))
+        this.tbody = $("<tbody/>")
+        this.table = $("<table class='tytable'/>").append(thead).append(this.tbody)
+        ty.addTab(tabName, this.table)
+    },
+
+    addClassDef: function(stub) {
+        var classDef = ty.classDefs[stub.id]
+        var span = "<span>" + classDef.name + "</span>"
+        span += "<span class='ui-icon ui-icon-triangle-1-e'></span>"
+        span += "<span class='ui-icon ui-icon-arrowreturnthick-1-e'></span>"
+        span += "<span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>"
+        this.tbody.append($.rowtd(span, stub.count, stub.nbytes))
+    }
+})
+

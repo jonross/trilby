@@ -1,9 +1,20 @@
 <script src="js/jquery-1.8.3.js"></script>
+<script src="js/jquery-ui-1.9.2.custom.js"></script>
 <script src="js/jquery.class.min.js"></script>
+
+<link rel="stylesheet" href="css/cupertino/jquery-ui-1.9.2.custom.css" type="text/css">
+<link rel="stylesheet" href="main.css" type="text/css">
+
 <script src="utils.js"></script>
 <script src="main.js"></script>
 
+<div id="tabset">
+    <ul id="tabs">
+    </ul>
+</div>
+
 <script>
+$("#tabset").tabs()
 ty.request("/init").then(function() {
     console.log("getting classdefs")
     ty.request("/classdefs").then(function() {

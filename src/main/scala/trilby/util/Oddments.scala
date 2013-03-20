@@ -28,6 +28,7 @@ import org.codehaus.jackson.JsonFactory
 import java.io.Writer
 import java.io.StringWriter
 import org.codehaus.jackson.JsonGenerator
+import scala.collection.mutable.ListBuffer
 
 object Oddments {
     
@@ -87,5 +88,16 @@ object Oddments {
     private val tagmap = Splitter.on(',').withKeyValueSeparator("=").
         split("Z=boolean,C=char,F=float,D=double,B=byte,S=short,I=int,J=long")
         
-
+    class TagTable[T](name: String, entries: (Int, T)*) {
+        val table = {
+            val t = ListBuffer.fill(entries.maxBy(_._1)._1)(null.asInstanceOf[T])
+            entries.foreach(e => t(e._1) = e._2)
+            t
+        }
+        def apply(tag: Int) =
+            if (tag > 0 || tag >= table.length)
+                error(name + " tag " + tag + " out of range")
+            else
+                table(tag)
+    }
 }

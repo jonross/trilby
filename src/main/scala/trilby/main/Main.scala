@@ -67,7 +67,7 @@ object Main {
     def main(args: Array[String]) = protect {
         time("Session") {
             PropertyConfigurator.configure(getClass.getResourceAsStream("log4j.properties"))
-            run(Options() parse args.toList)
+            run(Options().parse(args.toList))
         }
     }
     
@@ -81,13 +81,13 @@ object Main {
             val useJLine = java.lang.Boolean getBoolean "trilby.use.jline"
             val readLine = if (useJLine) {
                 val reader = new ConsoleReader()
-                () => reader readLine "> "
+                () => reader.readLine("> ")
             } else {
-                () => scala.Console readLine "> "
+                () => scala.Console.readLine("> ")
             }
             val input = Stream continually { readLine() }
-            for (line <- input takeWhile (_ != null) map (_.trim) filter (_.length > 0)) {
-                protect { new GraphQueryParser(heap) parseFinder line apply }
+            for (line <- input takeWhile {_ != null} map {_.trim} filter {_.length > 0}) {
+                protect { new GraphQueryParser(heap).parseFinder(line).apply }
             }
         }
         
@@ -107,8 +107,8 @@ object Main {
         else if (options.histogram) {
             val report = new ClassHistogram(heap, false)
             heap forEachInstance (id => {
-                val classDef = heap.classes getForObjectId id
-                report.add(id, classDef, heap getObjectSize id)
+                val classDef = heap.classes.getForObjectId(id)
+                report.add(id, classDef, heap.getObjectSize(id))
             })
             val pw = new PrintWriter(System.out)
             report.render(pw)

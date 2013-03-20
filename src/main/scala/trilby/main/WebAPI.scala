@@ -17,25 +17,26 @@ class WebAPI(heap: Heap, baseReq: Request,
     implicit def jsonifier(s: Seq[Any]) = new { def toJSON = jsonify(s) }
     
     def handle() {
-        val path = req.getPathInfo replaceAll ("https?://", "")
-        rsp setStatus HttpServletResponse.SC_OK
+        val path = req.getPathInfo.replaceAll("https?://", "")
+        rsp.setStatus(HttpServletResponse.SC_OK)
         path match {
             case s if s endsWith ".js" => sendFile(s, "text/javascript")
             case s if s endsWith ".css" => sendFile(s, "text/css")
             case s if s endsWith ".html" => sendFile(s, "text/html")
+            case s if s endsWith ".png" => sendFile(s, "image/png")
             case s if s endsWith "/init" => sendJson(initUI)
             case s if s endsWith "/classdefs" => sendJson(classDefs)
             case s if s endsWith "/fullhisto" => sendJson(fullHisto)
             case s => sendJson(oops("No response for " + path))
         }
-        baseReq setHandled true
+        baseReq.setHandled(true)
     }
     
     private def sendFile(path: String, mimeType: String) {
-        println ("serve " + path)
-        using (getClass getResourceAsStream ("../web" + path)) { in =>
-            rsp setContentType mimeType + ";charset=utf-8"
-            ByteStreams copy (in, rsp getOutputStream)
+        println("serve " + path)
+        using (getClass.getResourceAsStream("../web" + path)) { in =>
+            rsp.setContentType(mimeType + ";charset=utf-8")
+            ByteStreams.copy(in, rsp getOutputStream)
         }
     }
     
