@@ -1,6 +1,4 @@
-.cache
 .classpath
-.gradle
 .project
 bin/
-build/
+target/

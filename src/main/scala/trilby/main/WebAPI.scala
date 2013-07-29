@@ -97,6 +97,8 @@ class WebAPI(heap: Heap, baseReq: Request,
             gen.writeEndArray()
         case n: Int =>
             gen.writeNumber(n)
+        case n: Long =>
+            gen.writeNumber(n)
         case f: Float =>
             gen.writeNumber(f)
         case _ =>

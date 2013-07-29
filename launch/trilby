@@ -1,0 +1,80 @@
+#!/bin/sh
+
+runner=scala
+jarg=-J
+java_options=
+heap_size=5000m
+verbose_gc=false
+gc_details=true
+have_gc=false
+trilby=$HOME/src/trilby
+main_class=trilby.main.Main
+eclipse_build=false
+use_jline=true
+
+while true; do case "$1" in
+    --eclipse)
+        eclipse_build=true
+        shift
+        ;;
+    --genheap)
+        main_class=trilby.main.GenHeap
+        shift
+        ;;
+    --hprof)
+        java_options="$java_options $jarg-agentlib:hprof=cpu=samples,depth=35,interval=10"
+        shift
+        ;;
+    --g1)
+        java_options="$java_options $jarg-XX:+UnlockExperimentalVMOptions $jarg-XX:+UseG1GC"
+        gc_details=false
+        have_gc=true
+        shift
+        ;;
+    --gc)
+        verbose_gc=true
+        shift
+        ;;
+    --heapsize)
+        heap_size="$2"
+        shift; shift
+        ;;
+    --jrun)
+        runner=java
+        jarg=
+        shift
+        ;;
+    --nojline)
+        use_jline=false
+        shift
+        ;;
+    --*)
+        break
+        ;;
+    -*)
+        java_options="$java_options $jarg$1"
+        shift
+        ;;
+    *)
+        break
+        ;;
+esac; done
+
+if $verbose_gc; then
+    java_options="$java_options $jarg-verbose:gc"
+    $gc_details && java_options="$java_options $jarg-XX:+PrintGCDetails"
+fi
+
+$have_gc || java_options+=" $jarg-XX:+UseConcMarkSweepGC"
+
+if $eclipse_build; then
+    JARS="$trilby/bin:$(ls $trilby/build/export/*.jar | grep -v scala | paste -s -d: -)"
+else
+    JARS="$(ls $trilby/build/export/*.jar $trilby/build/libs/*.jar | grep -v scala | paste -s -d: -)"
+fi
+
+# set -x
+$runner -cp "$JARS" -Dtrilby.use.jline=$use_jline \
+    $jarg-Xss10m $jarg-Xms$heap_size $jarg-Xmx$heap_size \
+    $jarg-server $java_options $jline $main_class "$@"
+

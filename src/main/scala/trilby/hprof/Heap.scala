@@ -272,7 +272,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
         val noFields = new Array[Java.Type](0)
         val noNames = new Array[String](0)
         
-        for (val i <- 0 until staticRefs.size by 2) {
+        for (i <- 0 until staticRefs.size by 2) {
             val fromClassHid = staticRefs.get(i)
             val toObjectHid = staticRefs.get(i+1)
             var fake = fakes.get(fromClassHid)
