@@ -48,13 +48,13 @@ object Main {
     
     case class Options(val histogram: Boolean = false,
                        val interactive: Boolean = false,
-                       val web: Boolean = false,
+                       // val web: Boolean = false,
                        val heapFile: File = null) {
         
         def parse(options: List[String]): Options = options match {
             case "--histo" :: _ => copy(histogram = true) parse options.tail
             case "--inter" :: _ => copy(interactive = true) parse options.tail
-            case "--web" :: _ => copy(web = true) parse options.tail
+            // case "--web" :: _ => copy(web = true) parse options.tail
             case x :: _ if x(0) == '-' => die("Unknown option: " + x)
             case x :: Nil => copy(heapFile = new File(x))
             case _ => die("Missing or extraneous heap filenames")
@@ -91,6 +91,7 @@ object Main {
             }
         }
         
+        /*
         else if (options.web) {
             println("Starting web server")
             val server = new Server(7070)
@@ -103,6 +104,7 @@ object Main {
             server.start()
             server.join()
         }
+        */
         
         else if (options.histogram) {
             val report = new ClassHistogram(heap, false)
