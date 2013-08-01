@@ -59,8 +59,10 @@ trait HeapData {
                 panic("Non-aligned heap ID: " + hid)
             hid >>> 2
         }
-        if (xid > 0xFFFFFFFFL)
-            panic("ID too big: " + hid)
+        // I'm finding there are corrupted IDs in HPROF dumps.  Can't do this
+        // check anymore.  Have to hope they aren't critical records.
+        // if (xid > 0xFFFFFFFFL)
+        //     panic("ID too big: %x".format(hid), new Exception())
         xid
     }
     
@@ -95,7 +97,7 @@ class MappedHeapData(private val channel: FileChannel,
     def readLong() = mapped.getLong()
     def readUByte() = mapped.get() & 0xFF
     def readUShort() = mapped.getShort() & 0xFFFF
-    def readULong() = mapped.getInt() & 0xFFFFFFFFL
+    def readUInt() = mapped.getInt() & 0xFFFFFFFFL
     
     def readInt(pos: Long) = mapped.getInt(move(pos))
     def readLong(pos: Long) = mapped.getLong(move(pos))

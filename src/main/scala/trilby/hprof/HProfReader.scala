@@ -87,13 +87,14 @@ class HProfReader (data: MappedHeapData) {
             data.demand(9)
             val tag = data.readUByte()
             data.skip(4) // ignore timestamp
-            val length = data.readULong()
+            val length = data.readUInt()
             data.demand(length)
             if (tag < 0 || tag >= recordHandlers.length)
                 panic("Bad tag %d at input position %d".format(tag, data.position))
             val handler = recordHandlers(tag)
             if (handler == null)
                 panic("Unknown tag %d at input position %d".format(tag, data.position))
+            // log.info("Record tag " + tag + " length " + length)
             handler(length)
             numRecords += 1
         }
@@ -125,20 +126,22 @@ class HProfReader (data: MappedHeapData) {
         if (length > 0) data.skip(length)
     
     private def handleUTF8Record(length: Long) {
-        val id = data.readId()
+        val hid = data.readId()
         val nBytes = length.asInstanceOf[Int] - heap.idSize
         if (nBytes > buf.length)
             buf = new Array[Byte](nBytes)
         data.readAll(buf, 0, nBytes)
-        heap.addString(id, new String(buf, 0, nBytes))
+        val str = new String(buf, 0, nBytes)
+        // log.info("Add string id %x '%s'".format(id, str))
+        heap.addString(hid, str)
     }
     
     private def handleLoadClassRecord(length: Long) {
-        data.readInt() // classSerial
-        val id = data.readId()
-        data.readInt() // stackSerial
-        val nameId = data.readId()
-        heap.addLoadedClass(id, nameId)
+        data.readInt() // skip classSerial
+        val hid = data.readId()
+        data.readInt() // skip stackSerial
+        val nameHid = data.readId()
+        heap.addLoadedClass(hid, nameHid)
     }
     
     private def handleHeapSection(length: Long) {

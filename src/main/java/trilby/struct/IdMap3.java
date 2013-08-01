@@ -53,7 +53,7 @@ public class IdMap3
         if (longId == 0)
             throw new RuntimeException("Attempt to id-map null pointer");
         else if (longId > (1L << 40) - 1)
-            throw new RuntimeException("ID too big: " + longId);
+            throw new RuntimeException(String.format("ID too big: %x", longId));
 
         int slot = (int) (longId >>> 16);
         short key = (short) (longId & 0xFFFF);

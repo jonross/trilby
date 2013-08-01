@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (C) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,38 @@
  * SOFTWARE.
  */
 
-package trilby.test;
+package trilby.util;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 public class GenHeap
 {
-    private Map<Integer,Object> m = Maps.newHashMap();
+    private Map<Integer,Object> m = new HashMap<>();
+    private int passes;
+
+    class Thing {
+        Integer value;
+    }
     
-    {
+    GenHeap(int passes) {
+        this.passes = passes;
+    }
+    
+    void gen() throws Exception {
         Random random = new Random();
-        List<String> list = Lists.newArrayList();
+        List<Thing> list = new ArrayList<>();
         
-        for (int i = 0; i < 1000; i++) {
-            list.add(String.valueOf(i));
+        for (int i = 0; i < passes; i++) {
+            Thing t = new Thing();
+            t.value = i;
+            list.add(t);
             if (random.nextInt(10) == 0) {
                 m.put(i, list);
-                list = Lists.newArrayList();
+                list = new ArrayList<>();
             }
         }
         
@@ -50,10 +60,14 @@ public class GenHeap
             m.put(i, String.valueOf(i));
         }
         */
+
+        System.err.println("ready to dump, sleeping");
+        Thread.sleep(60000);
     }
     
     public static void main(String[] args) throws Exception {
-        GenHeap g = new GenHeap();
-        Thread.sleep(60000);
+        GenHeap g = new GenHeap(Integer.parseInt(args[0]));
+        g.gen();
     }
 }
+

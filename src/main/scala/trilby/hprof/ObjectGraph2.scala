@@ -40,8 +40,8 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
     log.info("Building graph")
     val g = new ImmutableIntGraph(builder, Settings.DEFAULT)
     log.info("Finding dominators")
-    val dom = new Dominators(g)
-    dom.destroy()
+    // val dom = new Dominators(g)
+    // dom.destroy()
     
     def forEachReferrer(oid: Int, fn: Int => Unit) {
         var cur = g.walkInEdges(oid)

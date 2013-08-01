@@ -1,47 +1,31 @@
 #!/bin/sh
 
-runner=scala
-jarg=-J
-java_options=
-heap_size=5000m
+export JAVA_OPTS=""
+export PROJECT_DIR="$(dirname $0)/.."
+
+main_class=trilby.main.Main
 verbose_gc=false
 gc_details=true
-have_gc=false
-trilby=$HOME/src/trilby
-main_class=trilby.main.Main
-eclipse_build=false
+need_gc=true
 use_jline=true
 
 while true; do case "$1" in
-    --eclipse)
-        eclipse_build=true
-        shift
-        ;;
     --genheap)
         main_class=trilby.main.GenHeap
         shift
         ;;
     --hprof)
-        java_options="$java_options $jarg-agentlib:hprof=cpu=samples,depth=35,interval=10"
+        JAVA_OPTS+=" -agentlib:hprof=cpu=samples,depth=35,interval=10"
         shift
         ;;
     --g1)
-        java_options="$java_options $jarg-XX:+UnlockExperimentalVMOptions $jarg-XX:+UseG1GC"
+        JAVA_OPTS+=" -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC"
         gc_details=false
-        have_gc=true
+        need_gc=false
         shift
         ;;
     --gc)
         verbose_gc=true
-        shift
-        ;;
-    --heapsize)
-        heap_size="$2"
-        shift; shift
-        ;;
-    --jrun)
-        runner=java
-        jarg=
         shift
         ;;
     --nojline)
@@ -52,7 +36,7 @@ while true; do case "$1" in
         break
         ;;
     -*)
-        java_options="$java_options $jarg$1"
+        JAVA_OPTS+=" $1"
         shift
         ;;
     *)
@@ -61,20 +45,20 @@ while true; do case "$1" in
 esac; done
 
 if $verbose_gc; then
-    java_options="$java_options $jarg-verbose:gc"
-    $gc_details && java_options="$java_options $jarg-XX:+PrintGCDetails"
+    JAVA_OPTS+=" -verbose:gc"
+    if $gc_details; then
+        JAVA_OPTS+=" -XX:+PrintGCDetails"
+    fi
 fi
 
-$have_gc || java_options+=" $jarg-XX:+UseConcMarkSweepGC"
-
-if $eclipse_build; then
-    JARS="$trilby/bin:$(ls $trilby/build/export/*.jar | grep -v scala | paste -s -d: -)"
-else
-    JARS="$(ls $trilby/build/export/*.jar $trilby/build/libs/*.jar | grep -v scala | paste -s -d: -)"
+if $need_gc; then
+    JAVA_OPTS+=" -XX:+UseConcMarkSweepGC"
 fi
 
-# set -x
-$runner -cp "$JARS" -Dtrilby.use.jline=$use_jline \
-    $jarg-Xss10m $jarg-Xms$heap_size $jarg-Xmx$heap_size \
-    $jarg-server $java_options $jline $main_class "$@"
+# 'sbt start-script' exports a broken shell command under OS/X so override
+# its setting of PROJECT_DIR
+
+sed -i -e '/^PROJECT_DIR=/s/^/#/' $PROJECT_DIR/target/start
+exec $PROJECT_DIR/target/start "$@"
+
 
