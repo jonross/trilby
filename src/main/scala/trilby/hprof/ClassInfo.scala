@@ -31,6 +31,7 @@ import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Counts
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 
 class ClassInfo {
 
@@ -173,8 +174,8 @@ class ClassInfo {
 }
 
 /**
- * One of these tracks each class defined in the heap dump.
- * TODO: make immutable?
+ * One of these tracks each class defined in the heap dump.  Very mutable, rather
+ * problematic to make otherwise (and not worthwhile at this point.)
  */
 
 class ClassDef(/** Who holds this def */
@@ -186,26 +187,42 @@ class ClassDef(/** Who holds this def */
                /** Heap ID as read from heap dump */
                val heapId: Long, 
                /** Superclass heap ID from heap dump */
-               var superHeapId: Long,
+               val superHeapId: Long,
                /** Member fields, as given to {@link ClassInfo#addClassDef} */
                val fields: Array[Field]) {
     
-    /** Initially this is initialClassId, and is reassigned by {@link ClassInfo#rebase} */
-    private[this] var currentClassId = initialClassId
+    /** Starts as initialClassId, reassigned by {@link ClassInfo#rebase} */
+    private[this] var _classId = initialClassId
     
-    /** Number of instances in heap */
-    private[this] var numInstances = 0
+    /** Number of instances in heap; built incrementally */
+    private[this] var _count = 0
     
-    /** Number of bytes in all instances */
-    private[this] var numBytes = 0L
+    /** Number of bytes in all instances; built incrementally */
+    private[this] var _footprint = 0L
     
-    /** Size of member fields layout in the dump */
-    private[this] val fieldSpan = fields.map(_.jtype.size).sum
+    /** ClassDef of "parent" class; set by cook() */
+    private var _super: ClassDef = null
     
-    /** Is this the root of the Java hierarchy */
+    /** size of instance layout, including supers; set by cook() */
+    private var _span: Int = 0
+    
+    /** offsets of reference fields, including supers; set by cook() */
+    private var _refs: Array[Int] = null
+    
+    /** has the information been cook()ed */
+    private[this] var _cooked = false
+    
+    /**
+     *  Is this ClassInfo for java.lang.Object
+     */
+    
     val isRoot = name.equals("java.lang.Object")
     
-    /** Do we skip instances where directed to by query paths */
+    /**
+     * Do we skip instances where directed to by query paths.
+     * TODO: make this dynamic
+     */
+    
     val isElided = (name startsWith "java.util.") || 
         (name startsWith "com.TripResearch.lang.")
         (name equals "com.TripResearch.object.LRUHashMap") ||
@@ -216,34 +233,34 @@ class ClassDef(/** Who holds this def */
      */
     
     private[hprof] def addObject(size: Int) {
-        numInstances += 1
-        numBytes += size
+        _count += 1
+        _footprint += size
     }
     
     /**
      * Return the number of instances of this class in the heap.
      */
     
-    def count = numInstances
+    def count = _count
     
     /**
      * Return the total footprint in bytes of instances of this class.
      */
     
-    def footprint = numBytes
+    def footprint = _footprint
         
     /**
      * Return the synthetic class ID for this class.
      */
     
-    def classId = currentClassId
+    def classId = _classId
     
     /**
      * Reset the value returned by {@link #classId}; for use by {@link ClassInfo#rebase}.
-     * TODO: not an ideal approach, fix later.
+     * TODO: undo, now that we have off-heap memory.
      */
     
-    private[hprof] def resetClassId(newClassId: Int) = currentClassId = newClassId
+    private[hprof] def resetClassId(newClassId: Int) = _classId = newClassId
     
     /**
      * Return this class's superclass {@link ClassDef}.  Note this cannot be called
@@ -251,12 +268,19 @@ class ClassDef(/** Who holds this def */
      * before the layouts of their superclasses. :-(
      */
         
-    def superDef = {
-        val classDef = info.getByHeapId(superHeapId)
-        if (classDef == null)
-            panic("No superDef " + superHeapId + " for " + this)
-        classDef
-    }
+    def superDef = cook()._super
+    
+    /**
+     * Return offsets of reference fields; same caveats as {@link #superDef}.
+     */
+        
+    def refOffsets = cook()._refs
+    
+    /**
+     * Return length of an instance in the dump; same caveats as {@link #superDef}.
+     */
+    
+    def span() = cook()._span
     
     /**
      * Returns true if this class inherits from the indicated class.  Same caveats
@@ -267,30 +291,55 @@ class ClassDef(/** Who holds this def */
         !isRoot && (superHeapId == classDef.heapId || superDef.hasSuper(classDef))
         
     /**
-     * Same caveats as {@link #superDef}.
+     * "Cook" the class def, generally after the heap dump is read but in any case only works
+     * after all superclass defs have been identified.  Resolves the superclass pointer
+     * and computes reference offsets.  Cooks all superclasses as a side effect.
      */
         
-    def refOffsets = {
-        if (_refOffsets == null)
-            _refOffsets = setupRefOffsets()
-        _refOffsets
-    }
-        
-    private[this] var _refOffsets: Array[Field] = null
+    @inline
+    def cook() = if (_cooked) this else _cook()
     
-    private[this] def setupRefOffsets() = if (isRoot) Array[Field]() else {
-        allFields.foldRight(List(Field("dummy", Java.Bool, dumpSpan))) {
-            (f, rest) => f.copy(offset = rest.head.offset - f.jtype.size) :: rest
-        } filter {
-            _.jtype.isRef
-        } toArray
+    private[this] def _cook(): ClassDef = {
+            
+        if (! isRoot) {
+            _super = info.getByHeapId(superHeapId)
+            if (_super == null) {
+                panic("No super def for " + this)
+            }
+            _super.cook()
+        }
+        
+        _span = if (isRoot) 0 else _super.span
+        _span += fields.map(_.jtype.size).sum
+    
+        // Determine offsets of reference fields; includes references in superclasses.
+        // Note instance dumps are laid out leaf class first, so the reference offsets
+        // of a given class will be different for different subclasses.  :-(
+        //
+        // TODO: store more detailed field information per-class.
+        
+        val offsets = ArrayBuffer[Int]()
+        var offset = 0
+        var c = this
+        
+        while (! c.isRoot) {
+            for (field <- c.fields) {
+                if (field.jtype.isRef) {
+                    offsets.add(offset)
+                }
+                offset += field.jtype.size
+            }
+            c = c._super
+        }
+        
+        _refs = offsets.toArray
+        _cooked = true
+        this
     }
     
-    def dumpSpan: Int = 
-        if (isRoot) fieldSpan else fieldSpan + superDef.dumpSpan
-        
-    private def allFields: List[Field] = 
-        if (isRoot) Nil else fields.toList ::: superDef.allFields
+    /**
+     * For debugging.
+     */
     
     override def toString =
         name + ":c=" + classId + ":h=" + heapId

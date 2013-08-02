@@ -188,7 +188,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         val pos = data.position
         val offsets = classDef.refOffsets
         while (i < offsets.length) {
-            val toId = data.readId(pos + offsets(i).offset)
+            val toId = data.readId(pos + offsets(i))
             if (toId != 0)
                 heap.addReference(oid, toId)
             i += 1
