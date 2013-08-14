@@ -24,9 +24,13 @@ package trilby.hprof
 
 import java.io.EOFException
 import java.util.Date
-
 import trilby.util._
 import trilby.util.Oddments._
+import com.github.jonross.jmiser.ExpandoArray
+import com.github.jonross.jmiser.Settings
+
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 
 class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
@@ -83,24 +87,44 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         h
     }
     
+    /**
+     * Read a GC root.  This has the HID at the start followed by some amount of per-root
+     * of per-root data that we don't use.
+     */
+
     private def readGCRoot(kind: String, skip: Int) {
+        data.demand(heap.idSize)
         val id = data.readId()
-        if (skip > 0) data.skip(skip)
-        else if (skip == -1) data.skip(heap.idSize)
+        if (skip > 0) 
+            data.skip(skip)
+        else if (skip == -1) 
+            data.skip(heap.idSize)
         heap.addGCRoot(id, kind)
     }
     
     private def readClassDef() {
         
+        // header is
+        //
+        // class heap id    id
+        // stack serial     int         (ignored)
+        // superclass id    id
+        // classloader id   id          (ignored)
+        // signer id        id          (ignored)
+        // prot domain id   id          (ignored)
+        // reserved 1       id          (ignored)
+        // reserved 2       id          (ignored)
+        // instance size    int         TODO: use this?
+
+        data.demand(7 * heap.idSize + 8)
         val classId = data.readId()
-        val stackSerial = data.readInt()
+        data.skip(4)
         val superclassId = data.readId()
-        // skip class loader ID, signer ID, protection domain ID, 2 reserved
-        data.skip(5 * heap.idSize)
-        val instanceSize = data.readInt()
+        data.skip(5 * heap.idSize + 4)
 
         // Skip over constant pool
 
+        data.demand(2)
         for (i <- 0 until data.readUShort) {
             data.skip(2) // pool index
             val jtype = readJavaType()
@@ -110,6 +134,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         // Static fields
         // TODO: read static references
 
+        data.demand(2)
         for (i <- 0 until data.readUShort) {
             val fieldNameId = data.readId()
             val jtype = readJavaType()
@@ -125,10 +150,12 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
 
         // Instance fields
 
+        data.demand(2)
         val numFields = data.readUShort
         val fieldInfo = new Array[Java.Type](numFields)
         val fieldNameIds = new Array[Long](numFields)
         
+        data.demand(numFields * (1 + heap.idSize))
         for (i <- 0 until numFields) {
             fieldNameIds(i) = data.readId()
             fieldInfo(i) = readJavaType()
@@ -161,19 +188,35 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         t
     }
     
-    private def readInstance() {
+    /**
+     * Read header for an object instance, + references.
+     * TODO: hand off to background reader.
+     */
     
+    private def readInstance() {
+        
+        val pos = data.position - 1 // background segment reader must read record tag again
+        
+        // header is
+        //
+        // instance id      id
+        // stack serial     int      (ignored)
+        // class id         id
+        // length           int
+    
+        data.demand(2 * (4 + heap.idSize))
         val hid = data.readId()
-        val stackSerial = data.readInt()
+        data.skip(4)
         val classHid = data.readId()
         val size = data.readInt()
         val offset = data.position
         
         heap.addInstance(hid, classHid, offset, size + heap.idSize)
-        
-        if (size <= 0) return
+        if (size <= 0) 
+            return
+            
         data.demand(size)
-        val oid = heap mapId hid
+        val oid = heap.mapId(hid)
         
         // Class lookup will fail for the superclass ID of java.lang.Object, but
         // at that point remain should == 0 and we will have already returned.
@@ -185,22 +228,36 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         // We really only care about references right now.
             
         var i = 0
-        val pos = data.position
+        val base = data.position
         val offsets = classDef.refOffsets
         while (i < offsets.length) {
-            val toId = data.readId(pos + offsets(i))
+            val toId = data.readId(base + offsets(i))
             if (toId != 0)
-                heap.addReference(oid, toId)
+                heap.addReference(oid, toId) // TODO record null references
             i += 1
         }
         
-        data skip size
+        data.skip(size)
     }
+    
+    /**
+     * Read header for an array, + any references.
+     * TODO hand off to background reader.
+     */
     
     private def readArray(isObjects: Boolean) {
         
+        val pos = data.position - 1 // background segment reader must read record tag again
+            
+        // header is
+        //
+        // instance id      id
+        // stack serial     int      (ignored)
+        // # elements       int
+        
+        data.demand(heap.idSize + 8)
         val id = data.readId()
-        val stackSerial = data.readInt()
+        data.skip(4)
         var count = data.readInt()
         val offset = data.position
         // printf("Array at %d\n", offset)
@@ -224,5 +281,58 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
             if (count > 0)
                 data.skip(count * jtype.size)
         }
+    }
+}
+
+sealed class ReferenceBag(val settings: Settings)
+{
+    private val from = new ExpandoArray.OfInt(settings)
+    private val to = new ExpandoArray.OfLong(settings)
+    
+    def add(fromOid: Int, toHid: Long) {
+        from.add(fromOid)
+        to.add(toHid)
+    }
+    
+    def ids = (from, to)
+    
+    def size = from.size
+    
+    def destroy() {
+        from.destroy()
+        to.destroy()
+    }
+}
+
+object ReferenceBag
+{
+    def merge(bags: Seq[ReferenceBag], resolver: Long => Int, settings: Settings) = {
+        
+        val count = bags.map(_.size).sum
+        val from = new ExpandoArray.OfInt(settings)
+        val to = new ExpandoArray.OfLong(settings)
+        from.set(count, 0)
+        to.set(count, 0)
+        
+        var base = 0
+        def copy(i: Int, bagFrom: ExpandoArray.OfInt, bagTo: ExpandoArray.OfLong) {
+            var (j, k) = (i, 0)
+            var size = bagFrom.size
+            while (k < size) {
+                from.set(j, bagFrom.get(k))
+                to.set(j, resolver(bagTo.get(k)))
+                j += 1
+                k += 1
+            }
+        }
+        
+        bags map { bag =>
+            val f = future { copy(base, bag.from, bag.to) }
+            base += bag.size
+            f
+        } foreach { x => }
+        
+        bags.foreach(_.destroy)
+        (from, to)
     }
 }

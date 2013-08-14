@@ -108,6 +108,7 @@ class MappedHeapData(private val channel: FileChannel,
     def readAll(buf: Array[Byte], offset: Int, count: Int) =
         mapped.get(buf, offset, count)
     
+    // TODO: fix
     def skip(nbytes: Long) {
         val overrun = nbytes - mapped.remaining
         if (overrun > 0)
@@ -116,6 +117,14 @@ class MappedHeapData(private val channel: FileChannel,
             mapped position(mapped.position + nbytes.asInstanceOf[Int])
     }
     
+    /**
+     * Require at least count bytes in the current mapped section.  If not available, remap
+     * it from the current location.  Note only checks insufficient bytes in the section, not
+     * the file itself, so that a caller can make a conservative overestimate rather than
+     * calling demand() more frequently with smaller amounts.  Returns false if no more data
+     * available.
+     */
+
     def demand(nbytes: Long) {
         val overrun = nbytes - mapped.remaining
         if (overrun > 0)

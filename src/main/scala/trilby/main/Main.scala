@@ -59,9 +59,6 @@ object Main {
             case x :: Nil => copy(heapFile = new File(x))
             case _ => die("Missing or extraneous heap filenames")
         }
-        
-        def heap =
-            new HProfReader(new MappedHeapData(heapFile)).read
     }
     
     def main(args: Array[String]) = protect {
@@ -87,7 +84,9 @@ object Main {
             }
             val input = Stream continually { readLine() }
             for (line <- input takeWhile {_ != null} map {_.trim} filter {_.length > 0}) {
-                protect { new GraphQueryParser(heap).parseFinder(line).apply }
+                protect { 
+                    new GraphQueryParser(heap).parseFinder(line).apply 
+                }
             }
         }
         
