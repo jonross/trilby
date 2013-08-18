@@ -71,7 +71,7 @@ object Main {
     def run(options: Options) {
 
         val data = new MappedHeapData(options.heapFile)
-        heap = new HProfReader(data).read
+        heap = new HProfReader(data).read()
         
         if (options.interactive) {
             println("Entering interactive mode")

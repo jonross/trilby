@@ -76,18 +76,24 @@ class MappedHeapData(private val channel: FileChannel,
                      private val fileSize: Long) extends HeapData {
     
     def this(file: File) =
-        this(new RandomAccessFile(file, "r") getChannel, 0, file.length)
+        this(new RandomAccessFile(file, "r").getChannel, 0, file.length)
     
     private[this] var mapped: MappedByteBuffer = null
-    private[this] var bytebuf = new Array[Byte](1024)
     
     def remap(newOffset: Long) {
+        // TODO: force alignment
+        // skew = new % 8192
+        // offset = new - skew
+        // ...
+        // skip(skew)
         offset = newOffset
         val size = min(fileSize - offset, Int.MaxValue.toLong).toInt
-        mapped = channel map(READ_ONLY, offset, size)
+        mapped = channel.map(READ_ONLY, offset, size)
     }
     
     remap(offset)
+    
+    def dup = new MappedHeapData(channel, position, fileSize)
     
     def eof = position >= fileSize
     def position = offset + mapped.position
@@ -99,11 +105,11 @@ class MappedHeapData(private val channel: FileChannel,
     def readUShort() = mapped.getShort() & 0xFFFF
     def readUInt() = mapped.getInt() & 0xFFFFFFFFL
     
-    def readInt(pos: Long) = mapped.getInt(move(pos))
-    def readLong(pos: Long) = mapped.getLong(move(pos))
+    def readInt(pos: Long) = mapped.getInt(actual(pos))
+    def readLong(pos: Long) = mapped.getLong(actual(pos))
     def readId(pos: Long): Long = compressId(if (longIds) readLong(pos) else readInt(pos))
     
-    def move(pos: Long) = (pos - offset).asInstanceOf[Int]
+    def actual(pos: Long) = (pos - offset).asInstanceOf[Int]
     
     def readAll(buf: Array[Byte], offset: Int, count: Int) =
         mapped.get(buf, offset, count)

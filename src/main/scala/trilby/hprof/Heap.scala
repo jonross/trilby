@@ -35,8 +35,9 @@ import com.github.jonross.jmiser.Counts
 import gnu.trove.map.TIntByteMap
 import gnu.trove.map.hash.TIntByteHashMap
 import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
-class Heap(val idSize: Int, val fileDate: Date) {
+class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData {
     
     /** True if 64-bit VM */
     val longIds = idSize == 1
@@ -58,22 +59,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
-    
-    /** Temporary object, records object sizes as the heap is read */
-    private[this] var initialSizes = new ExpandoArray.OfInt(new Settings())
-    
-    /** After heap read, {@link #initialSizes} is optimized to this */
-    private[this] var finalSizes: Counts.TwoByte = null
-    
-    /** Temporary object, records heap IDs of GC roots */
-    private[this] var tmpGCRoots = new ExpandoArray.OfLong(new Settings())
-    
-    /** After heap read, {@link #tmpGCRoots} is mapped to these */
-    private[this] var gcRoots: TIntByteMap = null
-    
-    /** TODO: optimize this */
-    private[this] val offsets = new ExpandoArray.OfLong(new Settings())
-    
+
     /** Temporary object, records references as the heap is read */
     private[hprof] var graphBuilder = new ObjectGraphBuilder()
 
@@ -86,15 +72,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
     /** Highest offset seen by addInstance */
     private[this] var highestOffset = 0L
     
-    private val log = LoggerFactory.getLogger(getClass)
-    
-    /**
-     * Record a GC root. TODO: make work 
-     */
-
-    def addGCRoot(id: Long, desc: String) {
-        tmpGCRoots add id
-    }
+    val log = LoggerFactory.getLogger(getClass)
 
     /** 
      * Record a reference from the heap ID of a class to the heap ID of its
@@ -178,7 +156,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
         classDef.addObject(size)
         val oid = objectIdMap.map(id, true)
         classes.addObject(classDef, oid)
-        initialSizes.set(oid, size)
+        setObjectSize(oid, size)
         // offsets.add(offset)
         oid
     }
@@ -289,11 +267,75 @@ class Heap(val idSize: Int, val fileDate: Date) {
         staticRefs.destroy()
         staticRefs = null // allow GC
         
-        classes.rebase(maxId)
+        time("Rebasing classes") {
+            classes.rebase(maxId)
+        }
+        
+        time("Optimizing sizes") {
+            optimizeSizes(maxId)
+        }
+
+        time("Remapping heap IDs") {
+            graphBuilder.mapHeapIds(objectIdMap)
+        }
+        
+        optimizeGCRoots(objectIdMap)
+        
+        // As of this point we no longer need the ID mapping.
+        
+        val m = maxId
+        _maxId = () => m
+        objectIdMap = null // allow GC
+        
+        time ("Building object graph") {
+            graph = new ObjectGraph2(this, graphBuilder)
+        }
+        
+        log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
+        graphBuilder.destroy()
+        graphBuilder = null // allow GC
+    }
+    
+    // TODO: comments
+    
+    def forEachInstance(fn: Int => Unit) =
+        for (oid <- 1 to maxId)
+            fn(oid)
+    
+    def forEachReferrer(oid: Int, fn: Int => Unit) = 
+        graph.forEachReferrer(oid, fn)
+
+    def forEachReferee(oid: Int, fn: Int => Unit) = 
+        graph.forEachReferee(oid, fn)
+
+
+    def maxId = _maxId()
+    
+    def elideTypes(types: String) { }
+}
+
+/**
+ * Members / methods for object sizing.
+ */
+
+trait SizeData {
+    
+     /** Temporary object, records object sizes as the heap is read */
+    private[this] var initialSizes = new ExpandoArray.OfInt(new Settings())
+    
+    /** After heap read, {@link #initialSizes} is optimized to this */
+    private[this] var finalSizes: Counts.TwoByte = null
+       
+    def setObjectSize(oid: Int, size: Int) =
+        initialSizes.set(oid, size)
+        
+    def getObjectSize(id: Int) = 
+        finalSizes.get(id)
+        
+    def optimizeSizes(maxId: Int) {
         
         // Sizes can be compressed as most fit in two bytes.
         
-        log.info("Compressing sizes")
         finalSizes = new Counts.TwoByte(maxId + 1, 0.01)
         for (oid <- 1 to maxId)
             finalSizes.adjust(oid, initialSizes.get(oid))
@@ -301,8 +343,28 @@ class Heap(val idSize: Int, val fileDate: Date) {
         initialSizes.destroy()
         initialSizes = null // allow GC
         
-        log.info("Remapping heap IDs")
-        graphBuilder.mapHeapIds(objectIdMap)
+    }
+}
+
+trait GCRootData {
+    
+    def log: Logger
+    
+    /** Temporary object, records heap IDs of GC roots */
+    private[this] var tmpGCRoots = new ExpandoArray.OfLong(new Settings())
+    
+    /** After heap read, {@link #tmpGCRoots} is mapped to these */
+    private[this] var gcRoots: TIntByteMap = null
+    
+    /**
+     * Record a GC root. TODO: make work 
+     */
+
+    def addGCRoot(id: Long, desc: String) {
+        tmpGCRoots add id
+    }
+    
+    def optimizeGCRoots(idMap: IdMap3) {
         
         var goodRoots = 0
         var badRoots = 0
@@ -310,7 +372,7 @@ class Heap(val idSize: Int, val fileDate: Date) {
         
         for (i <- 0 until tmpGCRoots.size) {
             val rootHid = tmpGCRoots get i
-            val rootOid = objectIdMap.map(rootHid, false)
+            val rootOid = idMap.map(rootHid, false)
             if (rootOid != 0) { 
                 gcRoots.put(rootOid, 0)
                 goodRoots += 1
@@ -330,37 +392,5 @@ class Heap(val idSize: Int, val fileDate: Date) {
             log.info(goodRoots + " GC roots")
         else
             log.warn((goodRoots + badRoots) + " GC roots, " + badRoots + " bad")
-        
-        // As of this point we no longer need the ID mapping.
-        
-        val m = maxId
-        _maxId = () => m
-        objectIdMap = null // allow GC
-        
-        graph = new ObjectGraph2(this, graphBuilder)
-        log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
-        
-        graphBuilder.destroy()
-        graphBuilder = null // allow GC
     }
-    
-    // TODO: comments
-    
-    def forEachInstance(fn: Int => Unit) =
-        for (oid <- 1 to maxId)
-            fn(oid)
-    
-    def forEachReferrer(oid: Int, fn: Int => Unit) = 
-        graph.forEachReferrer(oid, fn)
-
-    def forEachReferee(oid: Int, fn: Int => Unit) = 
-        graph.forEachReferee(oid, fn)
-
-    def getObjectSize(id: Int) = 
-        finalSizes.get(id)
-        
-    def maxId = _maxId()
-    
-    def elideTypes(types: String) { }
 }
-

@@ -22,12 +22,11 @@
 
 package trilby.hprof
 
-import com.github.jonross.jmiser.graph.Dominators
-import com.github.jonross.jmiser.graph.ImmutableIntGraph
 import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Unboxed
 import trilby.struct.IdMap3
+import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory
 
 /**
@@ -38,7 +37,7 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
     private[this] val log = LoggerFactory.getLogger(getClass)
     
     log.info("Building graph")
-    val g = new ImmutableIntGraph(builder, Settings.DEFAULT)
+    val g = new CompactIntGraph(builder.edges(_), true)
     log.info("Finding dominators")
     // val dom = new Dominators(g)
     // dom.destroy()
@@ -70,7 +69,7 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
  * TODO: move to Int in signature, now using compressed HIDs.
  */
 
-class ObjectGraphBuilder extends ImmutableIntGraph.Data {
+class ObjectGraphBuilder {
     
     /** Synthetic object IDs at source of each edge */
     private[this] val refsFrom = new ExpandoArray.OfInt(new Settings())
@@ -121,8 +120,8 @@ class ObjectGraphBuilder extends ImmutableIntGraph.Data {
     /** Return the number of unmappable references */
     def numDead = _numDead
     
-    def edges(fn: Unboxed.IntIntVoidFn) =
-        for (i <- (0 until refsFrom.size)) {
+    def edges(fn: (Int, Int) => Unit) =
+        for (i <- 0 until refsFrom.size) {
             val from = refsFrom.get(i)
             val to = refsTo.get(i)
             if (to != 0)

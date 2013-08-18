@@ -79,11 +79,10 @@ class HProfReader (data: MappedHeapData) {
 
         // HPROF manual says this is two u4, not a u8.
 
-        val time = data.readInt().asInstanceOf[Long] << 32 + data.readInt()
+        val now = data.readInt().asInstanceOf[Long] << 32 + data.readInt()
+        heap = new Heap(Ref.size, new Date(now))
 
-        heap = new Heap(Ref.size, new Date(time))
-
-        while (! data.eof) {
+        def readit() = while (! data.eof) {
             data.demand(9)
             val tag = data.readUByte()
             data.skip(4) // ignore timestamp
@@ -97,6 +96,10 @@ class HProfReader (data: MappedHeapData) {
             // log.info("Record tag " + tag + " length " + length)
             handler(length)
             numRecords += 1
+        }
+        
+        time("Reading heap") {
+            readit()
         }
         
         log.info("Read " + numRecords + " dump records")
