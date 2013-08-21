@@ -35,19 +35,6 @@ public class BasicStructureTests
     private final static int NUM_IDS = (int) 1e6;
     
     @Test
-    public void testTwoByteCounts() {
-        Counts.TwoByte counts = new Counts.TwoByte(NUM_IDS, 0.05);
-        int[] actuals = new int[NUM_IDS];
-        for (int id = 0; id < NUM_IDS; id++) {
-            actuals[id] = (int) (Math.random() * (id % 50 == 0 ? Integer.MAX_VALUE : Short.MAX_VALUE));
-            counts.adjust(id, 10);
-            counts.adjust(id, actuals[id] - 10);
-        }
-        for (int id = 0; id < NUM_IDS; id++)
-            assertEquals(actuals[id], counts.get(id));
-    }
-
-    @Test
     public void testOneByteCounts() {
         Counts.OneByte counts = new Counts.OneByte(NUM_IDS, 0.05);
         int[] actuals = new int[NUM_IDS];

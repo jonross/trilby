@@ -24,7 +24,6 @@ package trilby.hprof
 
 import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
-import com.github.jonross.jmiser.Unboxed
 import trilby.struct.IdMap3
 import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory

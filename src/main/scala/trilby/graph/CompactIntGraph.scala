@@ -25,12 +25,11 @@ package trilby.graph
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import com.github.jonross.jmiser.BitSet
-import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
-import com.github.jonross.jmiser.Unboxed.IntIntVoidFn
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.util.Failure
+import trilby.nonheap.HugeArray
 import trilby.util.Oddments._
 import scala.concurrent.duration.Duration
 
@@ -63,6 +62,9 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
             numEdges += 1
         })
     }
+    
+    in.degrees.adjust(maxId, 0)
+    out.degrees.adjust(maxId, 0)
         
     logStats("in", maxId, in.degrees)
     logStats("out", maxId, out.degrees)
@@ -82,18 +84,18 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
         private[this] val boundaries = new BitSet(settings)
         
         /** Edge lists */
-        private[this] val edges = new ExpandoArray.OfInt(settings);
+        private[this] val edges = new HugeArray.OfInt(false);
         
         /** Temporary count of vertex degree */
-        var degrees = new ExpandoArray.OfInt(settings)
+        var degrees = new HugeArray.OfInt(false)
         
         /** For a vertex V, the offset into edges where its list begins */
-        private[this] val offsets = new ExpandoArray.OfInt(settings)
+        private[this] val offsets = new HugeArray.OfInt(false)
             
         def free() {
             boundaries.destroy()
-            offsets.destroy()
-            edges.destroy()
+            offsets.free()
+            edges.free()
         }
         
         def fill() {
@@ -126,7 +128,7 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
                 edges.set(offset + delta, to)
             })
             
-            degrees.destroy()
+            degrees.free()
             degrees = null
         }
         
@@ -161,10 +163,10 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
     
     def nextOutEdge(cursor: Long) = out.next(cursor)
     
-    private def logStats(inOut: String, maxId: Int, degrees: ExpandoArray.OfInt) {
+    private def logStats(inOut: String, maxId: Int, degrees: HugeArray.OfInt) {
         log.info("Frequency of " + inOut + "-degree across " + maxId + " nodes");
         val counts = new Array[Int](11)
-        val max = degrees.size() - 1
+        val max = degrees.size - 1
         for (i <- 1 to max) {
             val degree = degrees.get(i)
             counts(if (degree <= 10) degree else 10) += 1

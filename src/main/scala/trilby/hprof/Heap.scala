@@ -29,13 +29,13 @@ import trilby.util.Oddments._
 import java.util.Date
 import java.util.HashMap
 import gnu.trove.map.hash.TLongIntHashMap
-import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Counts
 import gnu.trove.map.TIntByteMap
 import gnu.trove.map.hash.TIntByteHashMap
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
+import trilby.nonheap.HugeArray
 
 class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData {
     
@@ -55,7 +55,7 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
     private[this] var objectIdMap = new IdMap3()
     
     /** Static references get special treatment after heap is read */
-    private[this] var staticRefs = new ExpandoArray.OfLong(new Settings().chunkSize(1024))
+    private[this] var staticRefs = new HugeArray.OfLong(false)
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
@@ -264,12 +264,8 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
             addReference(fake, toObjectHid)
         }
         
-        staticRefs.destroy()
+        staticRefs.free()
         staticRefs = null // allow GC
-        
-        time("Rebasing classes") {
-            classes.rebase(maxId)
-        }
         
         time("Optimizing sizes") {
             optimizeSizes(maxId)
@@ -321,10 +317,10 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
 trait SizeData {
     
      /** Temporary object, records object sizes as the heap is read */
-    private[this] var initialSizes = new ExpandoArray.OfInt(new Settings())
+    private[this] var initialSizes = new HugeArray.OfInt(false)
     
     /** After heap read, {@link #initialSizes} is optimized to this */
-    private[this] var finalSizes: Counts.TwoByte = null
+    private[this] var finalSizes: Counts.OneByte = null
        
     def setObjectSize(oid: Int, size: Int) =
         initialSizes.set(oid, size)
@@ -336,11 +332,11 @@ trait SizeData {
         
         // Sizes can be compressed as most fit in two bytes.
         
-        finalSizes = new Counts.TwoByte(maxId + 1, 0.01)
+        finalSizes = new Counts.OneByte(maxId + 1, 0.01)
         for (oid <- 1 to maxId)
             finalSizes.adjust(oid, initialSizes.get(oid))
         
-        initialSizes.destroy()
+        initialSizes.free()
         initialSizes = null // allow GC
         
     }
@@ -351,7 +347,7 @@ trait GCRootData {
     def log: Logger
     
     /** Temporary object, records heap IDs of GC roots */
-    private[this] var tmpGCRoots = new ExpandoArray.OfLong(new Settings())
+    private[this] var tmpGCRoots = new HugeArray.OfLong(false)
     
     /** After heap read, {@link #tmpGCRoots} is mapped to these */
     private[this] var gcRoots: TIntByteMap = null
@@ -382,7 +378,7 @@ trait GCRootData {
             }
         }
         
-        tmpGCRoots.destroy()
+        tmpGCRoots.free()
         tmpGCRoots = null // allow GC
         
         // Not clear this warning is meaningful... most GC roots appear unmappable,

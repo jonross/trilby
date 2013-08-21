@@ -22,20 +22,18 @@
 
 package trilby.graph
 
-import com.github.jonross.jmiser.Settings
-import com.github.jonross.jmiser.ExpandoArray
+import trilby.nonheap.HugeArray
 
 /**
  * Manage a related group of linked lists of unboxed integers, on or off the heap.
- * Built on {@link ExpandoArray}.
+ * Built on {@link HugeArray}.
  */
 
 class IntLists(onHeap: Boolean) {
     
-    private[this] val settings = Settings.DEFAULT.onHeap(onHeap)
-    private[this] val firsts = new ExpandoArray.OfInt(settings)
-    private[this] val lasts = new ExpandoArray.OfInt(settings)
-    private[this] val chains = new ExpandoArray.OfInt(settings)
+    private[this] val firsts = new HugeArray.OfInt(onHeap)
+    private[this] val lasts = new HugeArray.OfInt(onHeap)
+    private[this] val chains = new HugeArray.OfInt(onHeap)
     private[this] var freelist = 0
     
     // 0 means nil so the first cons is not used
@@ -43,9 +41,9 @@ class IntLists(onHeap: Boolean) {
     chains.add(0)
     
     def free() {
-        firsts.destroy()
-        lasts.destroy()
-        chains.destroy()
+        firsts.free()
+        lasts.free()
+        chains.free()
     }
     
     /**
@@ -121,7 +119,7 @@ class IntLists(onHeap: Boolean) {
      */
     
     def walk(listId: Int) = {
-        if (listId < 0 || listId >= firsts.size())
+        if (listId < 0 || listId >= firsts.size)
             throw new IllegalArgumentException("Invalid list ID: " + listId)
         _cursor(firsts.get(listId))
     }

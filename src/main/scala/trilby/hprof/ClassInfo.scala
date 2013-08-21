@@ -26,12 +26,12 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import trilby.util.Oddments._
 import com.google.common.primitives.Ints
-import com.github.jonross.jmiser.ExpandoArray
 import com.github.jonross.jmiser.Settings
 import com.github.jonross.jmiser.Counts
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+import trilby.nonheap.HugeArray
 
 class ClassInfo {
 
@@ -44,11 +44,8 @@ class ClassInfo {
     /** Maps synthetic class IDs to ClassDefs */
     private[this] val byClassId = new TIntObjectHashMap[ClassDef](100000)
     
-    /** Stores each object's class ID while reading the heap. */
-    private[this] var initialObjectMap = new ExpandoArray.OfInt(new Settings())
-    
-    /** After reading the heap, {@link #initialObjectMap} is optimized to this. */
-    private[this] var finalObjectMap: Counts.TwoByte = null
+    /** Maps synthetic object IDs to class IDs */
+    private[this] val objectMap = new HugeArray.OfInt(false)
     
     /** Class ID for next ClassDef we create. */
     private[this] var nextClassId = 1
@@ -77,7 +74,7 @@ class ClassInfo {
      */
 
     def addObject(classDef: ClassDef, objectId: Int) =
-        initialObjectMap.set(objectId, classDef.classId)
+        objectMap.set(objectId, classDef.classId)
         
     /**
      * Return the number of classes we know about.
@@ -126,43 +123,12 @@ class ClassInfo {
      */
     
     def getForObjectId(objectId: Int) = {
-        val classId =
-            if (finalObjectMap != null) finalObjectMap get objectId 
-            else initialObjectMap get objectId
+        val classId = objectMap.get(objectId)
         val classDef = getByClassId(classId)
         if (classDef == null) {
             panic("Internal error: no class for ID " + objectId)
         }
         classDef
-    }
-    
-    /** 
-     * Reassign class IDs.  Those with the highest instance counts have the lowest IDs,
-     * allowing us to move the objectId -> classId mapping into a Counts.TwoByte.
-     */
-    
-    def rebase(maxId: Int) {
-        
-        log.info("Rebasing classes")
-        
-        val allClasses = getAll.sortWith((a, b) => a.count > b.count)
-        var remap = new Array[Int](allClasses.length + 2) // IDs are 1-based
-        byClassId.clear()
-        nextClassId = 1
-        
-        for (classDef <- allClasses) {
-            remap(classDef.classId) = nextClassId
-            classDef.resetClassId(nextClassId)
-            byClassId.put(classDef.classId, classDef)
-            nextClassId += 1
-        }
-        
-        finalObjectMap = new Counts.TwoByte(maxId + 1, 0.001)
-        for (objectId <- 1 to maxId)
-            finalObjectMap.adjust(objectId, remap(initialObjectMap.get(objectId)))
-        
-        initialObjectMap.destroy()
-        initialObjectMap = null // allow GC
     }
     
     /**
@@ -183,16 +149,13 @@ class ClassDef(/** Who holds this def */
                /** Demangled class name */
                val name: String,
                /** Synthetic class ID assigned by {@link ClassInfo#addClassDef} */
-               initialClassId: Int,
+               val classId: Int,
                /** Heap ID as read from heap dump */
                val heapId: Long, 
                /** Superclass heap ID from heap dump */
                val superHeapId: Long,
                /** Member fields, as given to {@link ClassInfo#addClassDef} */
                val fields: Array[Field]) {
-    
-    /** Starts as initialClassId, reassigned by {@link ClassInfo#rebase} */
-    private[this] var _classId = initialClassId
     
     /** Number of instances in heap; built incrementally */
     private[this] var _count = 0
@@ -249,19 +212,6 @@ class ClassDef(/** Who holds this def */
     
     def footprint = _footprint
         
-    /**
-     * Return the synthetic class ID for this class.
-     */
-    
-    def classId = _classId
-    
-    /**
-     * Reset the value returned by {@link #classId}; for use by {@link ClassInfo#rebase}.
-     * TODO: undo, now that we have off-heap memory.
-     */
-    
-    private[hprof] def resetClassId(newClassId: Int) = _classId = newClassId
-    
     /**
      * Return this class's superclass {@link ClassDef}.  Note this cannot be called
      * until all classes have been read from the heap, since class layouts may appear

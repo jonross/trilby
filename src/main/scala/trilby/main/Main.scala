@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import com.google.common.io.ByteStreams
 import trilby.reports.FullHistogram
+import trilby.nonheap.NHUtils
 
 object Main {
     
@@ -64,6 +65,7 @@ object Main {
     def main(args: Array[String]) = protect {
         time("Session") {
             PropertyConfigurator.configure(getClass.getResourceAsStream("log4j.properties"))
+            NHUtils.initNow()
             run(Options().parse(args.toList))
         }
     }

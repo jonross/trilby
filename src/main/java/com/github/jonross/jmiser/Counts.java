@@ -33,55 +33,6 @@ import gnu.trove.map.hash.TIntIntHashMap;
 
 public class Counts
 {
-    public static class TwoByte {
-        
-        private final short[] values;
-        private final TIntIntHashMap map;
-        private final static short TOOBIG = Short.MAX_VALUE;
-        
-        /**
-         * Create a mostly two-byte counter array.
-         * 
-         * @param nIds How many IDs (0 to n-1) to allow
-         * @param outlying Multiplier for how many are expected to be outliers.
-         */
-
-        public TwoByte(int nIds, double outlying) {
-            values = new short[nIds];
-            map = new TIntIntHashMap((int) (nIds * outlying));
-        }
-        
-        /**
-         * Adjust a counter by indicated amount, returning updated value.
-         */
-
-        public int adjust(int id, int amount) {
-            int value = values[id];
-            if (value == TOOBIG) {
-                value = map.adjustOrPutValue(id, amount, amount);
-                if (value < TOOBIG) {
-                    values[id] = (short) value;
-                    map.remove(id);
-                }
-            } 
-            else {
-                value += amount;
-                if (value < TOOBIG)
-                    values[id] = (short) value;
-                else {
-                    values[id] = TOOBIG;
-                    map.put(id, value);
-                }
-            }
-            return value;
-        }
-        
-        public int get(int id) {
-            int value = values[id];
-            return value < TOOBIG ? value : map.get(id);
-        }
-    }
-
     public static class OneByte {
         
         private final byte[] values;
