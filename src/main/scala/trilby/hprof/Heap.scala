@@ -29,13 +29,12 @@ import trilby.util.Oddments._
 import java.util.Date
 import java.util.HashMap
 import gnu.trove.map.hash.TLongIntHashMap
-import com.github.jonross.jmiser.Settings
-import com.github.jonross.jmiser.Counts
 import gnu.trove.map.TIntByteMap
 import gnu.trove.map.hash.TIntByteHashMap
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import trilby.nonheap.HugeArray
+import trilby.util.SmallCounts
 
 class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData {
     
@@ -320,7 +319,7 @@ trait SizeData {
     private[this] var initialSizes = new HugeArray.OfInt(false)
     
     /** After heap read, {@link #initialSizes} is optimized to this */
-    private[this] var finalSizes: Counts.OneByte = null
+    private[this] var finalSizes: SmallCounts = null
        
     def setObjectSize(oid: Int, size: Int) =
         initialSizes.set(oid, size)
@@ -332,7 +331,7 @@ trait SizeData {
         
         // Sizes can be compressed as most fit in two bytes.
         
-        finalSizes = new Counts.OneByte(maxId + 1, 0.01)
+        finalSizes = new SmallCounts(maxId + 1, 0.01f)
         for (oid <- 1 to maxId)
             finalSizes.adjust(oid, initialSizes.get(oid))
         

@@ -24,14 +24,13 @@ package trilby.graph
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import com.github.jonross.jmiser.BitSet
-import com.github.jonross.jmiser.Settings
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.util.Failure
 import trilby.nonheap.HugeArray
 import trilby.util.Oddments._
 import scala.concurrent.duration.Duration
+import trilby.nonheap.BitSet
 
 /**
  * A more advanced implementation of {@link IntGraph} than
@@ -42,7 +41,6 @@ import scala.concurrent.duration.Duration
 class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends IntGraph
 {
     private[this] val log = LoggerFactory.getLogger(getClass)
-    private[this] val settings = Settings.DEFAULT.onHeap(onHeap)
     
     private[this] val in = new Edges(false)
     private[this] val out = new Edges(true)
@@ -66,8 +64,8 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
     in.degrees.adjust(maxId, 0)
     out.degrees.adjust(maxId, 0)
         
-    logStats("in", maxId, in.degrees)
-    logStats("out", maxId, out.degrees)
+    logStats("in", in.degrees)
+    logStats("out", out.degrees)
         
     def gofill(e: Edges) = future { e.fill() }
     for (f <- List(gofill(in), gofill(out)))
@@ -81,7 +79,7 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
     private class Edges(out: Boolean)
     {
         /** For an offset N, its bit is set here if it starts an edge list */
-        private[this] val boundaries = new BitSet(settings)
+        private[this] var boundaries: BitSet = null
         
         /** Edge lists */
         private[this] val edges = new HugeArray.OfInt(false);
@@ -93,7 +91,7 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
         private[this] val offsets = new HugeArray.OfInt(false)
             
         def free() {
-            boundaries.destroy()
+            boundaries.free()
             offsets.free()
             edges.free()
         }
@@ -101,6 +99,7 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
         def fill() {
             
             log.info("Finding edge offsets")
+            boundaries = new BitSet(maxId + 1, false)
             var nextOffset = 1
             
             var id = 1
@@ -163,7 +162,7 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
     
     def nextOutEdge(cursor: Long) = out.next(cursor)
     
-    private def logStats(inOut: String, maxId: Int, degrees: HugeArray.OfInt) {
+    private def logStats(inOut: String, degrees: HugeArray.OfInt) {
         log.info("Frequency of " + inOut + "-degree across " + maxId + " nodes");
         val counts = new Array[Int](11)
         val max = degrees.size - 1

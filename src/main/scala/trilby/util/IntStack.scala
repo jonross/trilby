@@ -20,37 +20,36 @@
  * SOFTWARE.
  */
 
-package com.github.jonross.jmiser;
+package trilby.util
+
+import java.util.EmptyStackException
+
+import com.google.common.primitives.Ints
 
 /**
- * Bitset backed by an {@link ExpandoArray}.
+ * Stack of integers that doesn't box.
  */
 
-public class BitSet
+class IntStack
 {
-    private final static int SHIFT = 6; // 1 << SHIFT = 64 bits in a long
-    private final ExpandoArray.OfLong bits;
+    private[this] var data = new Array[Int](100)
+    private[this] var _size = 0
     
-    public BitSet(Settings settings) {
-        bits = new ExpandoArray.OfLong(settings.chunkSize(settings.chunkSize() / 8));
+    def isEmpty = size == 0
+    
+    def size = _size
+    
+    def push(value: Int) {
+        if (size == data.length)
+            data = Ints.ensureCapacity(data, size*2, 0)
+        data(_size) = value
+        _size += 1
     }
     
-    public void destroy() {
-        bits.destroy();
-    }
-    
-    public void set(int bit) {
-        int i = bit >> SHIFT;
-        bits.set(i, bits.get(i) | (1L << bit));
-    }
-
-    public void clear(int bit) {
-        int i = bit >> SHIFT;
-        bits.set(i, bits.get(i) & ~(1L << bit));
-    }
-
-    public boolean get(int bit) {
-        int i = bit >> SHIFT;
-        return (bits.get(i) & (1L << bit)) != 0L;
+    def pop() = {
+        if (_size == 0)
+            throw new EmptyStackException()
+        _size -= 1
+        data(_size)
     }
 }

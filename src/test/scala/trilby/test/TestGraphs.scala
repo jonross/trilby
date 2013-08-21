@@ -4,7 +4,6 @@ import org.scalatest.FunSuite
 import trilby.graph.MutableIntGraph
 import trilby.graph.IntGraph
 import trilby.graph.CompactIntGraph
-import com.github.jonross.jmiser.Settings
 
 class TestGraphs extends FunSuite {
     

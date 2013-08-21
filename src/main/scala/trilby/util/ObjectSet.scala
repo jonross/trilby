@@ -22,8 +22,7 @@
 
 package trilby.util
 
-import com.github.jonross.jmiser.BitSet
-import com.github.jonross.jmiser.Settings
+import trilby.nonheap.BitSet
 
 /**
  * A subset of the objects IDs in a heap.
@@ -31,7 +30,7 @@ import com.github.jonross.jmiser.Settings
 
 class ObjectSet(val maxId: Int) {
     
-    private[this] val bits = new BitSet(Settings.DEFAULT)
+    private[this] val bits = new BitSet(maxId + 1, true) // TODO use off-heap
     
     def add(objectId: Int) = bits.set(objectId)
     

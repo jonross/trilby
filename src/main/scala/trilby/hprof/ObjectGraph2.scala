@@ -22,11 +22,10 @@
 
 package trilby.hprof
 
-import com.github.jonross.jmiser.ExpandoArray
-import com.github.jonross.jmiser.Settings
 import trilby.struct.IdMap3
 import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory
+import trilby.nonheap.HugeArray
 
 /**
  */
@@ -71,10 +70,10 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
 class ObjectGraphBuilder {
     
     /** Synthetic object IDs at source of each edge */
-    private[this] val refsFrom = new ExpandoArray.OfInt(new Settings())
+    private[this] val refsFrom = new HugeArray.OfInt(false)
     
     /** Heap object IDs at destination of each edge */
-    private[this] val refsTo = new ExpandoArray.OfInt(new Settings())
+    private[this] val refsTo = new HugeArray.OfInt(false)
     
     /** # of unmappable references encountered */
     private var _numDead = 0
@@ -109,8 +108,8 @@ class ObjectGraphBuilder {
     /** Clean up for GC */
     
     def destroy() {
-        refsFrom.destroy()
-        refsTo.destroy()
+        refsFrom.free()
+        refsTo.free()
     }
     
     /* Return # of references */

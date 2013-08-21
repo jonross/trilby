@@ -27,7 +27,7 @@ import gnu.trove.map.hash.TIntIntHashMap
 import trilby.hprof.Heap
 import trilby.query.GraphQuery
 import trilby.query.Target
-import trilby.struct.IntStack
+import trilby.util.IntStack
 import org.slf4j.LoggerFactory
 
 /**

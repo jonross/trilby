@@ -26,11 +26,9 @@ import java.io.EOFException
 import java.util.Date
 import trilby.util._
 import trilby.util.Oddments._
-import com.github.jonross.jmiser.ExpandoArray
-import com.github.jonross.jmiser.Settings
-
 import scala.concurrent._
 import ExecutionContext.Implicits.global
+import trilby.nonheap.HugeArray
 
 class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
@@ -284,10 +282,10 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     }
 }
 
-sealed class ReferenceBag(val settings: Settings)
+sealed class ReferenceBag
 {
-    private val from = new ExpandoArray.OfInt(settings)
-    private val to = new ExpandoArray.OfLong(settings)
+    private val from = new HugeArray.OfInt(false)
+    private val to = new HugeArray.OfLong(false)
     
     def add(fromOid: Int, toHid: Long) {
         from.add(fromOid)
@@ -299,23 +297,23 @@ sealed class ReferenceBag(val settings: Settings)
     def size = from.size
     
     def destroy() {
-        from.destroy()
-        to.destroy()
+        from.free()
+        to.free()
     }
 }
 
 object ReferenceBag
 {
-    def merge(bags: Seq[ReferenceBag], resolver: Long => Int, settings: Settings) = {
+    def merge(bags: Seq[ReferenceBag], resolver: Long => Int) = {
         
         val count = bags.map(_.size).sum
-        val from = new ExpandoArray.OfInt(settings)
-        val to = new ExpandoArray.OfLong(settings)
+        val from = new HugeArray.OfInt(false)
+        val to = new HugeArray.OfLong(false)
         from.set(count, 0)
         to.set(count, 0)
         
         var base = 0
-        def copy(i: Int, bagFrom: ExpandoArray.OfInt, bagTo: ExpandoArray.OfLong) {
+        def copy(i: Int, bagFrom: HugeArray.OfInt, bagTo: HugeArray.OfLong) {
             var (j, k) = (i, 0)
             var size = bagFrom.size
             while (k < size) {

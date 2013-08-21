@@ -26,8 +26,6 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import trilby.util.Oddments._
 import com.google.common.primitives.Ints
-import com.github.jonross.jmiser.Settings
-import com.github.jonross.jmiser.Counts
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer

@@ -20,34 +20,32 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package trilby.nonheap
 
-import java.util.EmptyStackException;
+/**
+ * Bitset backed by an {@link ExpandoArray}.
+ */
 
-import com.google.common.primitives.Ints;
-
-public class IntStack
+class BitSet(size: Int, onHeap: Boolean)
 {
-    private int[] data = new int[100];
-    private int size = 0;
+    private val SHIFT = 6 // 1 << SHIFT = 64 bits in a long
+    private val bits = new HugeArray.OfLong(onHeap)
+    bits.set(size - 1, 0) // TODO; use fixed array
     
-    public boolean isEmpty() {
-        return size == 0;
+    def free() = bits.free()
+    
+    def set(bit: Int) {
+        val i = bit >> SHIFT;
+        bits.set(i, bits.get(i) | (1L << bit))
     }
-    
-    public int size() {
-        return size;
+
+    def clear(bit: Int) {
+        val i = bit >> SHIFT
+        bits.set(i, bits.get(i) & ~(1L << bit))
     }
-    
-    public void push(int value) {
-        if (size == data.length)
-            data = Ints.ensureCapacity(data, size*2, 0);
-        data[size++] = value;
-    }
-    
-    public int pop() {
-        if (size == 0)
-            throw new EmptyStackException();
-        return data[--size];
+
+    def get(bit: Int) = {
+        val i = bit >> SHIFT
+        (bits.get(i) & (1L << bit)) != 0L
     }
 }
