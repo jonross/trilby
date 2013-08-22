@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,39 +20,31 @@
  * SOFTWARE.
  */
 
-package trilby.test;
+package trilby.test
 
-import static org.junit.Assert.*;
-import trilby.struct.IdMap3;
+import trilby.util.IdMap
+import org.scalatest.FunSuite
 
-import org.junit.Test;
-
-public class IdMapTests
+class TestIdMap extends FunSuite
 {
-    private final static int NUM_IDS = (int) 1e6;
+    private val NUM_IDS = 1000000
     
-    @Test
-    public void testIdMaps() {
-        // verify(new IdMap2());
-        verify(new IdMap3());
-        // verify(new IdMap4());
-    }
-    
-    private void verify(IdMap3 idMap) {
+    test("IdMap") {
         
-        long[] in = new long[NUM_IDS];
-        int[] out = new int[NUM_IDS];
-        long id = 0;
+        val map = new IdMap()
+        val in = new Array[Long](NUM_IDS)
+        val out = new Array[Int](NUM_IDS) 
+        var id = 0L
         
-        for (int i = 0; i < NUM_IDS; i++) {
-            id += 1 + 10 * Math.random();
-            in[i] = id;
-            out[i] = idMap.map(id, true);
+        for (i <- 0 until NUM_IDS) {
+            id += (1 + 10 * Math.random()).toLong
+            in(i) = id
+            out(i) = map.map(id, true)
         }
         
-        for (int i = 0; i < NUM_IDS; i++) {
-            assertEquals(i+1, out[i]);
-            assertEquals(out[i], idMap.map(in[i], false));
+        for (i <- 0 until NUM_IDS) {
+            assert(i + 1 === out(i))
+            assert(out(i) === map.map(in(i), false))
         }
     }
 }

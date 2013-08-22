@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,20 @@
  * SOFTWARE.
  */
 
-package trilby.struct;
+package trilby.util
 
-import gnu.trove.map.hash.TShortIntHashMap;
+import gnu.trove.map.hash.TShortIntHashMap
+import trilby.util.Oddments._
 
 /**
  * Maps long identifiers to integer identifiers as they are encountered in the
  * heap.  Uses prefix coding and predicted capacity based on observations.
  */
 
-public class IdMap3
+class IdMap
 {
-    private final TShortIntHashMap[] maps = new TShortIntHashMap[1 << 24];
-    private int nextId           = 1;
+    private[this] val maps = new Array[TShortIntHashMap](1 << 24)
+    private[this] var nextId = 1
 
     // Determined this empirically.  Below this point, rehashing as per-slot population
     // grows reduces performance; raising it gives no meaningful improvement on heaps
@@ -41,43 +42,47 @@ public class IdMap3
     // Note this will change dramatically if the ID compression factor changes,
     // as it did when ID compression was first added.
     
-    private final static int INITIAL_CAPACITY = 6000;
+    private[this] val INITIAL_CAPACITY = 6000
     
     // Likewise, 0.7 appears no slower than 0.5 for maps of these sizes and data values,
     // and saves a boatload of memory.
     
-    private final static float LOAD_FACTOR = 0.7f;
+    private[this] val LOAD_FACTOR = 0.7f
 
-    public int map(final long longId, boolean primary) {
+    def map(longId: Long, primary: Boolean): Int = {
 
-        if (longId == 0)
-            throw new RuntimeException("Attempt to id-map null pointer");
-        else if (longId > (1L << 40) - 1)
-            throw new RuntimeException(String.format("ID too big: %x", longId));
-
-        int slot = (int) (longId >>> 16);
-        short key = (short) (longId & 0xFFFF);
-        
-        TShortIntHashMap map = maps[slot];
-        if (map == null) {
-            map = maps[slot] = new TShortIntHashMap(INITIAL_CAPACITY, LOAD_FACTOR);
+        if (longId == 0) {
+            panic("Attempt to id-map null pointer")
+        }
+        else if (longId > (1L << 40) - 1) {
+            panic("ID too big: %x".format(longId))
         }
 
-        int id = map.get(key);
-        if (id > 0)
-            return id;
-
-        if (!primary)
-            return 0;
-
-        if (nextId == Integer.MAX_VALUE)
-            throw new RuntimeException("identifier limit exceeded");
+        val slot = (longId >>> 16).toInt
+        val key = (longId & 0xFFFF).toShort
         
-        map.put(key, nextId);
-        return nextId++;
-    }
+        var map = maps(slot)
+        if (map == null) {
+            map = new TShortIntHashMap(INITIAL_CAPACITY, LOAD_FACTOR)
+            maps(slot) = map
+        }
 
-    public int maxId() {
-        return nextId - 1;
+        val id = map.get(key)
+        if (id > 0) {
+            return id
+        }
+        else if (!primary) {
+            return 0
+        }
+        else if (nextId == Integer.MAX_VALUE) {
+            return error("identifier limit exceeded")
+        }
+        else {
+            map.put(key, nextId)
+            nextId += 1
+            return nextId - 1
+        }
     }
+    
+    def maxId = nextId - 1
 }

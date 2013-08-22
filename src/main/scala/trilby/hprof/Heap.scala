@@ -24,7 +24,7 @@ package trilby.hprof
 import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import gnu.trove.map.hash.TLongLongHashMap
-import trilby.struct.IdMap3
+import trilby.util.IdMap
 import trilby.util.Oddments._
 import java.util.Date
 import java.util.HashMap
@@ -51,7 +51,7 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
     private[this] val classNameIds = new TLongLongHashMap(100000)
 
     /** Maps object heap IDs to synthetic object IDs */
-    private[this] var objectIdMap = new IdMap3()
+    private[this] var objectIdMap = new IdMap()
     
     /** Static references get special treatment after heap is read */
     private[this] var staticRefs = new HugeArray.OfLong(false)
@@ -359,7 +359,7 @@ trait GCRootData {
         tmpGCRoots add id
     }
     
-    def optimizeGCRoots(idMap: IdMap3) {
+    def optimizeGCRoots(idMap: IdMap) {
         
         var goodRoots = 0
         var badRoots = 0

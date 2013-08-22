@@ -22,7 +22,7 @@
 
 package trilby.hprof
 
-import trilby.struct.IdMap3
+import trilby.util.IdMap
 import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory
 import trilby.nonheap.HugeArray
@@ -94,7 +94,7 @@ class ObjectGraphBuilder {
      * Map reference target heap IDs to object IDs.
      */
     
-    def mapHeapIds(idMap: IdMap3) {
+    def mapHeapIds(idMap: IdMap) {
         for (t <- 0 to 3 par)
             for (i <- t until refsTo.size by 4) {
                 val unmapped = refsTo.get(i) & 0xFFFFFFFFL
