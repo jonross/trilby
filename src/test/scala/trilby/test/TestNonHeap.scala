@@ -1,6 +1,6 @@
 package trilby.tests
 
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 import org.scalatest.FunSuite
 import java.util.Random
 
@@ -10,7 +10,7 @@ class TestNonHeap extends FunSuite {
     private val random = new Random()
     
     test("byte array sanity check") {
-        val a = new HugeArray.OfByte(false)
+        val a = new HugeAutoArray.OfByte(false)
         val bytes = new Array[Byte](COUNT)
         for (i <- 0 until COUNT) {
             bytes(i) = random.nextInt().toByte
@@ -22,7 +22,7 @@ class TestNonHeap extends FunSuite {
     }
 
     test("short array sanity check") {
-        val a = new HugeArray.OfShort(false)
+        val a = new HugeAutoArray.OfShort(false)
         val shorts = new Array[Short](COUNT)
         for (i <- 0 until COUNT) {
             shorts(i) = random.nextInt().toShort
@@ -34,7 +34,7 @@ class TestNonHeap extends FunSuite {
     }
 
     test("int array sanity check") {
-        val a = new HugeArray.OfInt(false)
+        val a = new HugeAutoArray.OfInt(false)
         val ints = new Array[Int](COUNT)
         for (i <- 0 until COUNT) {
             ints(i) = random.nextInt()
@@ -49,7 +49,7 @@ class TestNonHeap extends FunSuite {
     }
 
     test("long array sanity check") {
-        val a = new HugeArray.OfLong(false)
+        val a = new HugeAutoArray.OfLong(false)
         val longs = new Array[Long](COUNT)
         for (i <- 0 until COUNT) {
             longs(i) = random.nextLong()

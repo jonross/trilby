@@ -29,7 +29,7 @@ import com.google.common.primitives.Ints
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 
 class ClassInfo {
 
@@ -43,7 +43,7 @@ class ClassInfo {
     private[this] val byClassId = new TIntObjectHashMap[ClassDef](100000)
     
     /** Maps synthetic object IDs to class IDs */
-    private[this] val objectMap = new HugeArray.OfInt(false)
+    private[this] val objectMap = new HugeAutoArray.OfInt(false)
     
     /** Class ID for next ClassDef we create. */
     private[this] var nextClassId = 1

@@ -27,10 +27,11 @@ import org.slf4j.LoggerFactory
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.util.Failure
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 import trilby.util.Oddments._
 import scala.concurrent.duration.Duration
 import trilby.nonheap.BitSet
+import trilby.nonheap.HugeArray
 
 /**
  * A more advanced implementation of {@link IntGraph} than
@@ -38,36 +39,28 @@ import trilby.nonheap.BitSet
  * and an iteration function to specify the edges in advance.
  */
 
-class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends IntGraph
+class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends IntGraph
 {
     private[this] val log = LoggerFactory.getLogger(getClass)
     
-    private[this] val in = new Edges(false)
-    private[this] val out = new Edges(true)
+    private[this] val in = new Edges(maxId, false)
+    private[this] val out = new Edges(maxId, true)
     private[this] var numEdges = 0
-    private[this] var maxId = 0
     
     time("Generating degree counts") {
         f((x, y) => {
             if (x <= 0 || y <= 0)
                 throw new IllegalArgumentException("invalid edge: " + x + "->" + y);
-            out.degrees.adjust(x, 1)
-            in.degrees.adjust(y, 1)
-            if (x > maxId)
-                maxId = x
-            if (y > maxId)
-                maxId = y
+            out.degrees.set(x, out.degrees.get(x) + 1)
+            in.degrees.set(y, in.degrees.get(y) + 1)
             numEdges += 1
         })
     }
     
-    in.degrees.adjust(maxId, 0)
-    out.degrees.adjust(maxId, 0)
-        
     logStats("in", in.degrees)
     logStats("out", out.degrees)
         
-    def gofill(e: Edges) = future { e.fill() }
+    def gofill(e: Edges) = future { e.fill(numEdges) }
     for (f <- List(gofill(in), gofill(out)))
         Await.result(f, Duration.Inf)
     
@@ -76,19 +69,19 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
         out.free()
     }
     
-    private class Edges(out: Boolean)
+    private class Edges(maxId: Int, out: Boolean)
     {
         /** For an offset N, its bit is set here if it starts an edge list */
-        private[this] var boundaries: BitSet = null
+        private[this] val boundaries = new BitSet(maxId + 1, false)
         
         /** Edge lists */
-        private[this] val edges = new HugeArray.OfInt(false);
+        private[this] var edges: HugeArray.OfInt = null
         
         /** Temporary count of vertex degree */
-        var degrees = new HugeArray.OfInt(false)
+        var degrees = new HugeArray.OfInt(maxId + 1, false)
         
         /** For a vertex V, the offset into edges where its list begins */
-        private[this] val offsets = new HugeArray.OfInt(false)
+        private[this] val offsets = new HugeArray.OfInt(maxId + 1, false)
             
         def free() {
             boundaries.free()
@@ -96,10 +89,10 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
             edges.free()
         }
         
-        def fill() {
+        def fill(numEdges: Int) {
             
+            edges = new HugeArray.OfInt(numEdges + 1, false)
             log.info("Finding edge offsets")
-            boundaries = new BitSet(maxId + 1, false)
             var nextOffset = 1
             
             var id = 1
@@ -123,7 +116,8 @@ class CompactIntGraph(f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends 
                 val from = if (out) x else y
                 val to = if (out) y else x
                 val offset = offsets.get(from)
-                val delta = degrees.adjust(from, -1)
+                val delta = degrees.get(from) - 1
+                degrees.set(from, delta)
                 edges.set(offset + delta, to)
             })
             

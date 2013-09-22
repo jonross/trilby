@@ -22,18 +22,18 @@
 
 package trilby.graph
 
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 
 /**
  * Manage a related group of linked lists of unboxed integers, on or off the heap.
- * Built on {@link HugeArray}.
+ * Built on {@link HugeAutoArray}.
  */
 
 class IntLists(onHeap: Boolean) {
     
-    private[this] val firsts = new HugeArray.OfInt(onHeap)
-    private[this] val lasts = new HugeArray.OfInt(onHeap)
-    private[this] val chains = new HugeArray.OfInt(onHeap)
+    private[this] val firsts = new HugeAutoArray.OfInt(onHeap)
+    private[this] val lasts = new HugeAutoArray.OfInt(onHeap)
+    private[this] val chains = new HugeAutoArray.OfInt(onHeap)
     private[this] var freelist = 0
     
     // 0 means nil so the first cons is not used

@@ -62,11 +62,7 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
     // matches a function call e.g. "histo(x, y)"
     
     def funCall =
-        varname ~ funargs ^^ { case f ~ a => (f, a) }
-        
-    def funargs =
-        "(" ~ ")" ^^ { case _ => List() } |
-        "(" ~ arglist ~ ")" ^^ { case _ ~ a ~ _ => a }
+        varname ~ arglist ^^ { case f ~ a => (f, a) }
         
     def arglist = 
         varname ~ rep(

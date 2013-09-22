@@ -33,7 +33,7 @@ import gnu.trove.map.TIntByteMap
 import gnu.trove.map.hash.TIntByteHashMap
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 import trilby.util.SmallCounts
 
 class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData {
@@ -54,7 +54,7 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
     private[this] var objectIdMap = new IdMap()
     
     /** Static references get special treatment after heap is read */
-    private[this] var staticRefs = new HugeArray.OfLong(false)
+    private[this] var staticRefs = new HugeAutoArray.OfLong(false)
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
@@ -283,7 +283,7 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
         objectIdMap = null // allow GC
         
         time ("Building object graph") {
-            graph = new ObjectGraph2(this, graphBuilder)
+            graph = new ObjectGraph2(this, maxId, graphBuilder)
         }
         
         log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
@@ -316,7 +316,7 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
 trait SizeData {
     
      /** Temporary object, records object sizes as the heap is read */
-    private[this] var initialSizes = new HugeArray.OfInt(false)
+    private[this] var initialSizes = new HugeAutoArray.OfInt(false)
     
     /** After heap read, {@link #initialSizes} is optimized to this */
     private[this] var finalSizes: SmallCounts = null
@@ -346,7 +346,7 @@ trait GCRootData {
     def log: Logger
     
     /** Temporary object, records heap IDs of GC roots */
-    private[this] var tmpGCRoots = new HugeArray.OfLong(false)
+    private[this] var tmpGCRoots = new HugeAutoArray.OfLong(false)
     
     /** After heap read, {@link #tmpGCRoots} is mapped to these */
     private[this] var gcRoots: TIntByteMap = null

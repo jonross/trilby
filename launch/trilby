@@ -15,7 +15,7 @@ while true; do case "$1" in
         shift
         ;;
     --hprof)
-        JAVA_OPTS+=" -agentlib:hprof=cpu=samples,depth=35,interval=10"
+        JAVA_OPTS+=" -agentlib:hprof=cpu=samples,depth=35,interval=5"
         shift
         ;;
     --g1)

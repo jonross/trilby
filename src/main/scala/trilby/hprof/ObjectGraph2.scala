@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,17 +25,17 @@ package trilby.hprof
 import trilby.util.IdMap
 import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 
 /**
  */
 
-class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
+class ObjectGraph2(val heap: Heap, maxId: Int, val builder: ObjectGraphBuilder) {
     
     private[this] val log = LoggerFactory.getLogger(getClass)
     
     log.info("Building graph")
-    val g = new CompactIntGraph(builder.edges(_), true)
+    val g = new CompactIntGraph(maxId, builder.edges(_), true)
     log.info("Finding dominators")
     // val dom = new Dominators(g)
     // dom.destroy()
@@ -70,10 +70,10 @@ class ObjectGraph2(val heap: Heap, val builder: ObjectGraphBuilder) {
 class ObjectGraphBuilder {
     
     /** Synthetic object IDs at source of each edge */
-    private[this] val refsFrom = new HugeArray.OfInt(false)
+    private[this] val refsFrom = new HugeAutoArray.OfInt(false)
     
     /** Heap object IDs at destination of each edge */
-    private[this] val refsTo = new HugeArray.OfInt(false)
+    private[this] val refsTo = new HugeAutoArray.OfInt(false)
     
     /** # of unmappable references encountered */
     private var _numDead = 0
@@ -95,14 +95,18 @@ class ObjectGraphBuilder {
      */
     
     def mapHeapIds(idMap: IdMap) {
-        for (t <- 0 to 3 par)
+        val dead = for (t <- 0 to 3 par) yield {
+            var dead = 0
             for (i <- t until refsTo.size by 4) {
                 val unmapped = refsTo.get(i) & 0xFFFFFFFFL
                 val mapped = idMap.map(unmapped, false)
                 refsTo.set(i, mapped)
                 if (mapped == 0)
-                    _numDead += 1
+                    dead += 1
             }
+            dead
+        }
+        _numDead = dead.sum
     }
     
     /** Clean up for GC */

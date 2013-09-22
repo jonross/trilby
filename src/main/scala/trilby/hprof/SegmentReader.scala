@@ -28,7 +28,7 @@ import trilby.util._
 import trilby.util.Oddments._
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import trilby.nonheap.HugeArray
+import trilby.nonheap.HugeAutoArray
 
 class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
@@ -284,8 +284,8 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
 
 sealed class ReferenceBag
 {
-    private val from = new HugeArray.OfInt(false)
-    private val to = new HugeArray.OfLong(false)
+    private val from = new HugeAutoArray.OfInt(false)
+    private val to = new HugeAutoArray.OfLong(false)
     
     def add(fromOid: Int, toHid: Long) {
         from.add(fromOid)
@@ -307,13 +307,13 @@ object ReferenceBag
     def merge(bags: Seq[ReferenceBag], resolver: Long => Int) = {
         
         val count = bags.map(_.size).sum
-        val from = new HugeArray.OfInt(false)
-        val to = new HugeArray.OfLong(false)
+        val from = new HugeAutoArray.OfInt(false)
+        val to = new HugeAutoArray.OfLong(false)
         from.set(count, 0)
         to.set(count, 0)
         
         var base = 0
-        def copy(i: Int, bagFrom: HugeArray.OfInt, bagTo: HugeArray.OfLong) {
+        def copy(i: Int, bagFrom: HugeAutoArray.OfInt, bagTo: HugeAutoArray.OfLong) {
             var (j, k) = (i, 0)
             var size = bagFrom.size
             while (k < size) {
