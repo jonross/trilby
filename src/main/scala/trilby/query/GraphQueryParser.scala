@@ -59,7 +59,7 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
             Target(first._1, first._2, false, false) :: rest
         }
     
-    // matches a function call e.g. "histo(x, y)"
+    // matches a function call e.g. "histo x, y"
     
     def funCall =
         varname ~ arglist ^^ { case f ~ a => (f, a) }
@@ -70,7 +70,7 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
         ) ^^ { case first ~ rest => first :: rest }
     
     // matches report function against a query, e.g.
-    // histo(x, y) of HashMap x ->> Integer y
+    // histo x, y of HashMap x ->> Integer y
     
     def fullQuery =
         funCall ~ "of" ~ pathFinder ^^ {

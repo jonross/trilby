@@ -13,10 +13,10 @@ class TestQueries extends FunSuite {
     test("Skipping") {
         val mapClass = SampleHeap.heap.classes.getByName("trilby.util.MyHashMap")
         
-        var histo = SampleHeap.query("histo x, y of String x <- trilby.util.MyHashMap y")
+        var histo = SampleHeap.query("histo x, y of String y <- trilby.util.MyHashMap x")
         assert(histo.counts.get(mapClass.classId) === null)
         
-        histo = SampleHeap.query("histo x, y of String x <<- trilby.util.MyHashMap y")
+        histo = SampleHeap.query("histo x, y of String y <<- trilby.util.MyHashMap x")
         var counts = histo.counts.get(mapClass.classId)
         assert(counts.count === 10000)
     }

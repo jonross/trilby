@@ -150,7 +150,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                         funArgs(i) = focus(query.argIndices(i))
                         i += 1
                     }
-                    query.acceptor accept funArgs
+                    query.acceptor.accept(funArgs)
                 }
             }
             else if (canElide && target.elide && classDef.isElided) {

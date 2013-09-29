@@ -63,9 +63,9 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
         slot.nbytes += info
     }
     
-    def accept(ids: Array[Int]) = if (!(knownIds contains ids(0))) {
-        add(ids(0), heap.classes getForObjectId ids(1), heap getObjectSize ids(0))
-        knownIds add ids(0)
+    def accept(ids: Array[Int]) = if (!(knownIds contains ids(1))) {
+        add(ids(1), heap.classes.getForObjectId(ids(0)), heap.getObjectSize(ids(1)))
+        knownIds.add(ids(1))
     }
         
     def print(out: PrintWriter) {
