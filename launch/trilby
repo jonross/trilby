@@ -1,17 +1,29 @@
 #!/bin/sh
 
-export JAVA_OPTS=""
-export PROJECT_DIR="$(dirname $0)/.."
+export PROJECT_DIR=$(dirname $0)/..
 
-main_class=trilby.main.Main
+if [ ! -e $PROJECT_DIR/target/start ]; then
+    echo "$PROJECT_DIR/target/start" is missing >&2
+    echo "You probably forgot to run 'sbt start-script'" >&2
+    exit 1
+fi
+
+# 'sbt start-script' exports a broken shell command under OS/X so override
+# its setting of PROJECT_DIR
+
+sed -i -e '/^PROJECT_DIR=/s/^/#/' $PROJECT_DIR/target/start
+
+export JAVA_OPTS=""
+
 verbose_gc=false
 gc_details=true
 need_gc=true
 use_jline=true
+gen_heap=false
 
 while true; do case "$1" in
     --genheap)
-        main_class=trilby.main.GenHeap
+        gen_heap=true
         shift
         ;;
     --hprof)
@@ -55,10 +67,16 @@ if $need_gc; then
     JAVA_OPTS+=" -XX:+UseConcMarkSweepGC"
 fi
 
-# 'sbt start-script' exports a broken shell command under OS/X so override
-# its setting of PROJECT_DIR
+if $gen_heap; then
+    $PROJECT_DIR/target/start trilby.util.GenHeap "$@" &
+    sleep 1
+    pid=$(jps -l | awk '$2 == "trilby.util.GenHeap" { print $1; }')
+    rm -f genheap.hprof
+    jmap -dump:format=b,file=genheap.hprof $pid
+    kill $pid
+else
+    exec $PROJECT_DIR/target/start trilby.main.Main "$@"
+fi
 
-sed -i -e '/^PROJECT_DIR=/s/^/#/' $PROJECT_DIR/target/start
-exec $PROJECT_DIR/target/start trilby.main.Main "$@"
 
 

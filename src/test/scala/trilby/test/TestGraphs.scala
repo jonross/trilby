@@ -78,8 +78,8 @@ class TestGraphs extends FunSuite {
     test("graphs") {
         testIt(edges_1, makeMutableGraph(edges_1), null)
         testIt(edges_2, makeMutableGraph(edges_2), doms_2)
-        testIt(edges_1, makeCompactGraph(edges_1), null)
-        testIt(edges_2, makeCompactGraph(edges_2), doms_2)
+        testIt(edges_1, makeCompactGraph(edges_1, 6), null)
+        testIt(edges_2, makeCompactGraph(edges_2, 26), doms_2)
     }
     
     private def makeMutableGraph(edges: Array[Array[Int]]) = {
@@ -90,13 +90,13 @@ class TestGraphs extends FunSuite {
         g
     }
     
-    private def makeCompactGraph(edges: Array[Array[Int]]) = {
+    private def makeCompactGraph(edges: Array[Array[Int]], maxNode: Int) = {
         val f = (g: (Int, Int) => Unit) => {
             for (e <- edges)
                 for (i <- 1 until e.length)
                     g(e(0), e(i))
         }
-        new CompactIntGraph(f, true)
+        new CompactIntGraph(maxNode, f, true)
     }
     
     private def testIt(edges: Array[Array[Int]], g: IntGraph, doms: Array[Int]) {

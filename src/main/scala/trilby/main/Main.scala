@@ -87,7 +87,12 @@ object Main {
             val input = Stream continually { readLine() }
             for (line <- input takeWhile {_ != null} map {_.trim} filter {_.length > 0}) {
                 protect { 
-                    new GraphQueryParser(heap).parseFinder(line).apply 
+                    new GraphQueryParser(heap).parseFinder(line).apply() match {
+                        case p: Printable =>
+                            val out = new java.io.PrintWriter(System.out)
+                            p.print(out)
+                            out.flush()
+                    }
                 }
             }
         }
@@ -114,7 +119,7 @@ object Main {
                 report.add(id, classDef, heap.getObjectSize(id))
             })
             val pw = new PrintWriter(System.out)
-            report.render(pw)
+            report.print(pw)
             pw.flush()
         }
         

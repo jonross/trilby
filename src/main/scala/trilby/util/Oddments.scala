@@ -29,8 +29,13 @@ import java.io.Writer
 import java.io.StringWriter
 import org.codehaus.jackson.JsonGenerator
 import scala.collection.mutable.ListBuffer
+import java.io.PrintWriter
 
 object Oddments {
+    
+    trait Printable {
+        def print(out: PrintWriter)
+    }
     
     def using[C <: {def close(): Unit}, B](resource: C)(fn: C => B): B =
         try { fn(resource) } finally { resource.close() }                

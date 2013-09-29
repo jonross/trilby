@@ -60,7 +60,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         else new Finder(targets.head, index, canElide, 
                         buildFinders(targets.tail, index + 1, true))
     
-    def run() { 
+    def run() = { 
         var count = 0
         heap forEachInstance { id => {
             if (! heap.classes.getForObjectId(id).isElided) {
@@ -71,9 +71,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                 finder check id
             }
         } }
-        val out = new java.io.PrintWriter(System.out)
-        query.acceptor render out
-        out.flush()
+        query.acceptor
     }
     
     class Finder(val target: Target, index: Int, canElide: Boolean, next: Finder) {

@@ -32,19 +32,13 @@ import java.io.PrintWriter
  * A complete query spec for the {@link GraphSearch} engine.
  */
 
-trait Renderable {
-    type T
-    def render(pw: PrintWriter): Unit
-    def +(that: T): T
-}
-
 class GraphQuery(heap: Heap, funName: String, funArgs: List[String],
-                 val finder: List[Target]) extends (() => Unit) {
+                 val finder: List[Target]) extends (() => Any) {
     
-    private val functions: Map[String,(Int, () => QueryFunction with Renderable)] = 
+    private val functions: Map[String,(Int, () => QueryFunction with Printable)] = 
         Map("histo" -> ((2, () => new ClassHistogram(heap))))
         
-    def apply() { new GraphSearch2(heap, this).run() }
+    def apply() = new GraphSearch2(heap, this).run()
     
     /** Function to accept object IDs from the search path */
     val acceptor = functions.get(funName) match {

@@ -55,11 +55,14 @@ public class GenHeap
             }
         }
         
-        /*
+        /**
+         * Generate custom map instance for simple skip testing.
+         */
+        
+        MyHashMap<Integer,String> m = new MyHashMap<>();
         for (int i = 0; i < 10000; i++) {
             m.put(i, String.valueOf(i));
         }
-        */
 
         System.err.println("ready to dump, sleeping");
         Thread.sleep(60000);
@@ -71,3 +74,11 @@ public class GenHeap
     }
 }
 
+/**
+ * Custom hashmap subclass we can easily target for query testing.
+ */
+
+@SuppressWarnings("serial")
+class MyHashMap<K,V> extends HashMap<K,V>
+{
+}

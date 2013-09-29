@@ -27,8 +27,8 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
 import trilby.hprof.Heap
 import trilby.query.QueryFunction
-import trilby.query.Renderable
 import trilby.util.ObjectSet
+import trilby.util.Oddments.Printable
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 
@@ -38,7 +38,7 @@ import scala.collection.JavaConversions._
  */
 
 class ClassHistogram (heap: Heap, showIds: Boolean = false) 
-    extends QueryFunction with Renderable
+    extends QueryFunction with Printable
 {
     class Counts(val classDef: ClassDef, var count: Int = 0, var nbytes: Long = 0L) { }
     val counts = new TIntObjectHashMap[Counts]
@@ -68,7 +68,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
         knownIds add ids(0)
     }
         
-    def render(out: PrintWriter) {
+    def print(out: PrintWriter) {
         
         val values = counts.values(new Array[Counts](0))
         val slots = values.toList sortWith { (a,b) =>

@@ -83,8 +83,7 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
         "elide" ~ types ^^ { case _ ~ t => () => heap.elideTypes(t) } |
         "elide" ^^         { case _ => () => heap.elideTypes(null) }
         
-    type Fn = () => Unit
-    val fnident = { x : Fn => x}
+    type Fn = () => Any
     def fnid[T] = { x: T => x}
         
     def action: Parser[Fn] =
@@ -93,6 +92,6 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
     def parseFinder(text : String) = parseAll(action, text) match {
         case Error(msg, next) => sys.error(msg)
         case Failure(msg, next) => sys.error(msg)
-        case p: ParseResult[() => Unit] => p.get
+        case p: ParseResult[() => Any] => p.get
     }
 }
