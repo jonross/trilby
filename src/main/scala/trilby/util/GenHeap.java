@@ -30,40 +30,34 @@ import java.util.Random;
 
 public class GenHeap
 {
-    private Map<Integer,Object> m = new HashMap<>();
+    private Map<Integer,Object> m1 = new MyHashMap<>();
+    private Map<Integer,Object> m2 = new HashMap<>();
+    
     private int passes;
 
-    class Thing {
-        Integer value;
-    }
-    
     GenHeap(int passes) {
         this.passes = passes;
     }
     
     void gen() throws Exception {
-        Random random = new Random();
-        List<Thing> list = new ArrayList<>();
         
-        for (int i = 0; i < passes; i++) {
-            Thing t = new Thing();
-            t.value = i;
+         // Generate custom map instance for simple skip testing.
+        for (int i = 0; i < 10000; i++) {
+            m1.put(i, String.valueOf(i));
+        }
+
+        Random random = new Random();
+        List<Thing1> list = new ArrayList<>();
+        
+        for (int i = 1; i <= passes; i++) {
+            Thing1 t = new Thing1(new Thing2[]{new Thing2(i-1), new Thing2(i), new Thing2(i+1)});
             list.add(t);
-            if (random.nextInt(10) == 0) {
-                m.put(i, list);
+            if (i % 10 == 0) {
+                m2.put(i, list);
                 list = new ArrayList<>();
             }
         }
         
-        /**
-         * Generate custom map instance for simple skip testing.
-         */
-        
-        MyHashMap<Integer,String> m = new MyHashMap<>();
-        for (int i = 0; i < 10000; i++) {
-            m.put(i, String.valueOf(i));
-        }
-
         System.err.println("ready to dump, sleeping");
         Thread.sleep(60000);
     }
@@ -82,3 +76,23 @@ public class GenHeap
 class MyHashMap<K,V> extends HashMap<K,V>
 {
 }
+
+/**
+ * Other classes for same
+ *
+ */
+
+class Thing1 {
+    Thing2[] things;
+    Thing1(Thing2[] t) {
+        things = t;
+    }
+}
+ 
+class Thing2 {
+    Integer value;
+    Thing2(int v) {
+        value = v;
+    }
+}
+ 

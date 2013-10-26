@@ -21,4 +21,7 @@ object SampleHeap {
         val query = new GraphQueryParser(heap).parseFinder(s)
         query.apply().asInstanceOf[ClassHistogram]
     }
+    
+    def classNamed(s: String) =
+        heap.classes.getByName(s)
 }
