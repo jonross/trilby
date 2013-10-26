@@ -11,7 +11,7 @@ object SampleHeap {
     
     lazy val heap = {
         NHUtils.initNow()
-        val file = new File("genheap.hprof")
+        val file = new File("smallheap.hprof")
         assert(file.exists)
         val data = new MappedHeapData(file)
         new HProfReader(data).read()

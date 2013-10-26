@@ -56,6 +56,24 @@ while true; do case "$1" in
         ;;
 esac; done
 
+# Generate test heaps
+#
+
+gen_heap() {
+    local filename="$1"
+    local numObjects="$2"
+    echo "Generating $filename with $numObjects test objects"
+    rm -f $filename
+    $PROJECT_DIR/target/start trilby.util.GenHeap $numObjects &
+    sleep 2
+    pid=$(jps -l | awk '$2 == "trilby.util.GenHeap" { print $1; }')
+    jmap -dump:format=b,file=$filename $pid
+    echo "Killing GenHeap & waiting"
+    kill $pid
+    wait $pid
+    echo "Done with $filename"
+}
+
 if $verbose_gc; then
     JAVA_OPTS+=" -verbose:gc"
     if $gc_details; then
@@ -68,12 +86,7 @@ if $need_gc; then
 fi
 
 if $gen_heap; then
-    $PROJECT_DIR/target/start trilby.util.GenHeap "$@" &
-    sleep 1
-    pid=$(jps -l | awk '$2 == "trilby.util.GenHeap" { print $1; }')
-    rm -f genheap.hprof
-    jmap -dump:format=b,file=genheap.hprof $pid
-    kill $pid
+    gen_heap smallheap.hprof 10000
 else
     exec $PROJECT_DIR/target/start trilby.main.Main "$@"
 fi

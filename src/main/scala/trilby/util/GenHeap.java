@@ -58,7 +58,7 @@ public class GenHeap
             }
         }
         
-        System.err.println("ready to dump, sleeping");
+        System.err.println("Ready to dump, sleeping");
         Thread.sleep(60000);
     }
     
