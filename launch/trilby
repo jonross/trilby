@@ -19,11 +19,11 @@ verbose_gc=false
 gc_details=true
 need_gc=true
 use_jline=true
-gen_heap=false
+run_what=trilby
 
 while true; do case "$1" in
     --genheap)
-        gen_heap=true
+        run_what=gen_heap
         shift
         ;;
     --hprof)
@@ -44,6 +44,10 @@ while true; do case "$1" in
         use_jline=false
         shift
         ;;
+    --offline)
+        run_what=offline_tests
+        shift
+        ;;
     --*)
         break
         ;;
@@ -56,8 +60,26 @@ while true; do case "$1" in
         ;;
 esac; done
 
+# Primary run target is trilby itself
+#
+
+run_trilby() {
+    exec $PROJECT_DIR/target/start trilby.main.Main "$@"
+}
+
+# Run tests against offline / non-public heaps
+#
+
+run_offline_tests() {
+    $HOME/work/trilby-ls/testit
+}
+
 # Generate test heaps
 #
+
+run_gen_heap() {
+    gen_heap smallheap.hprof 10000
+}
 
 gen_heap() {
     local filename="$1"
@@ -85,11 +107,5 @@ if $need_gc; then
     JAVA_OPTS+=" -XX:+UseConcMarkSweepGC"
 fi
 
-if $gen_heap; then
-    gen_heap smallheap.hprof 10000
-else
-    exec $PROJECT_DIR/target/start trilby.main.Main "$@"
-fi
-
-
+run_$run_what "$@"
 
