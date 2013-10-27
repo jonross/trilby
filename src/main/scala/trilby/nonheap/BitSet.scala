@@ -29,8 +29,8 @@ package trilby.nonheap
 class BitSet(size: Int, onHeap: Boolean)
 {
     private val SHIFT = 6 // 1 << SHIFT = 64 bits in a long
-    private val bits = new HugeAutoArray.OfLong(onHeap)
-    bits.set(size - 1, 0) // TODO; use fixed array
+    private val bits = new HugeArray.OfLong(size, onHeap)
+    bits.set(size - 1, 0)
     
     def free() = bits.free()
     

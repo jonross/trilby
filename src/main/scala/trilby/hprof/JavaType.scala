@@ -40,7 +40,7 @@ object Java {
         /** Is this a reference or primitive type */
         val isRef: Boolean = false)
     {
-        /** Assigned when found in heap; TODO: don't */
+        /** Assigned when found in heap; ugly hack, should fix */
         var hid = -1L
         /** Size in bytes */
         def size: Int

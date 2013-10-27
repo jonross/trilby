@@ -55,16 +55,11 @@ class ObjectGraph2(val heap: Heap, maxId: Int, val builder: ObjectGraphBuilder) 
             cur = g.nextOutEdge(cur)
         }
     }
-        
-    def inCounts = 0 // TODO fix
-    def outCounts = 0 // TODO fix
 }
 
 /**
  * Accumulates raw information about object references and generates
  * {@link ObjectGraph}, above.
- * 
- * TODO: move to Int in signature, now using compressed HIDs.
  */
 
 class ObjectGraphBuilder {

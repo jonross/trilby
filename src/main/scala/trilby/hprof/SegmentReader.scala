@@ -112,7 +112,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         // prot domain id   id          (ignored)
         // reserved 1       id          (ignored)
         // reserved 2       id          (ignored)
-        // instance size    int         TODO: use this?
+        // instance size    int         (usage tbd)
 
         data.demand(7 * heap.idSize + 8)
         val classId = data.readId()
@@ -130,7 +130,6 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         }
 
         // Static fields
-        // TODO: read static references
 
         data.demand(2)
         for (i <- 0 until data.readUShort) {
@@ -188,7 +187,6 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
     /**
      * Read header for an object instance, + references.
-     * TODO: hand off to background reader.
      */
     
     private def readInstance() {
@@ -231,7 +229,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         while (i < offsets.length) {
             val toId = data.readId(base + offsets(i))
             if (toId != 0)
-                heap.addReference(oid, toId) // TODO record null references
+                heap.addReference(oid, toId)
             i += 1
         }
         
@@ -240,7 +238,6 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
     /**
      * Read header for an array, + any references.
-     * TODO hand off to background reader.
      */
     
     private def readArray(isObjects: Boolean) {
@@ -262,7 +259,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
 
         if (isObjects) {
             val classId = data.readId()
-            // Assume compressed OOPS; TODO: make configurable
+            // Assume compressed OOPS
             heap.addInstance(id, classId, offset, count * 4 + 2 * heap.idSize)
             val mapped = heap.mapId(id)
             while (count > 0) {

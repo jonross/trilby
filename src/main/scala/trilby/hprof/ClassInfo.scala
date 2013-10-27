@@ -181,7 +181,6 @@ class ClassDef(/** Who holds this def */
     
     /**
      * Do we skip instances where directed to by query paths.
-     * TODO: make this dynamic
      */
     
     val isElided = (name startsWith "java.util.") || 
@@ -263,8 +262,6 @@ class ClassDef(/** Who holds this def */
         // Determine offsets of reference fields; includes references in superclasses.
         // Note instance dumps are laid out leaf class first, so the reference offsets
         // of a given class will be different for different subclasses.  :-(
-        //
-        // TODO: store more detailed field information per-class.
         
         val offsets = ArrayBuffer[Int]()
         var offset = 0

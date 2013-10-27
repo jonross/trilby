@@ -20,8 +20,9 @@ object NHUtils {
             (cleanerMethod, cleanMethod)
         }
         catch {
+            // Need to handle non-Sun JVMs at some point
             case e: Exception =>
-                error("Can't clean direct bufs: " + e) // TODO improve
+                error("Can't clean direct bufs: " + e)
         }
     }
     
@@ -40,7 +41,8 @@ object NHUtils {
         }
         catch {
             case e: Exception =>
-                error("Can't clean direct buf: " + e) // TODO improve
+                // Need to handle non-Sun JVMs at some point
+                error("Can't clean direct buf: " + e)
         }
     }
     

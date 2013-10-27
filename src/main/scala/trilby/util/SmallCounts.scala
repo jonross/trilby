@@ -27,8 +27,6 @@ import gnu.trove.map.hash.TIntIntHashMap
 /**
  * Optimize storage of direct-indexed per-object counters.  These are for use cases where 
  * 99% or more of counts will fit in one byte (for instance, graph degrees.)
- * 
- * TODO: optional off-heap storage
  */
 
 class SmallCounts(size: Int, outlying: Float) 

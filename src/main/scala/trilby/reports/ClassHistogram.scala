@@ -51,7 +51,6 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     private[this] val log = LoggerFactory.getLogger(getClass)
     
     type T = ClassHistogram
-    def +(that: ClassHistogram) = this // TODO: fix this
         
     def add(id: Int, classDef: ClassDef, info: Long) {
         var slot = counts.get(classDef.classId)

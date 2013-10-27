@@ -180,9 +180,6 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
      * Record the layout of a class.  Panics if the class's name ID, name or
      * superclass ID have not been read.
      * 
-     * HACK ALERT (TODO: fix) If this is one of the primitive array types,
-     * also record its heap ID in the appropriate Java.Type.
-     * 
      * @parma hid Heap ID of the class
      * @param superHid Heap ID of the superclass.
      * @param fields {@link Java.Type} descriptors for each field
@@ -291,8 +288,6 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
         graphBuilder = null // allow GC
     }
     
-    // TODO: comments
-    
     def forEachInstance(fn: Int => Unit) =
         for (oid <- 1 to maxId)
             fn(oid)
@@ -352,7 +347,7 @@ trait GCRootData {
     private[this] var gcRoots: TIntByteMap = null
     
     /**
-     * Record a GC root. TODO: make work 
+     * Record a GC root.
      */
 
     def addGCRoot(id: Long, desc: String) {

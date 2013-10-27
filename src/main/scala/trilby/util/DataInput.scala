@@ -81,7 +81,7 @@ class MappedHeapData(private val channel: FileChannel,
     private[this] var mapped: MappedByteBuffer = null
     
     def remap(newOffset: Long) {
-        // TODO: force alignment
+        // may need to force alignment per Go version
         // skew = new % 8192
         // offset = new - skew
         // ...
@@ -114,7 +114,6 @@ class MappedHeapData(private val channel: FileChannel,
     def readAll(buf: Array[Byte], offset: Int, count: Int) =
         mapped.get(buf, offset, count)
     
-    // TODO: fix
     def skip(nbytes: Long) {
         val overrun = nbytes - mapped.remaining
         if (overrun > 0)

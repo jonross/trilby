@@ -99,8 +99,6 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         
         private[this] val log = LoggerFactory.getLogger(getClass)
         
-        // TODO: do wildcard matching differently
- 
         val isWild = target.types endsWith ".*"
         val typePrefix = target.types.substring(0, target.types.length - 1)
         
