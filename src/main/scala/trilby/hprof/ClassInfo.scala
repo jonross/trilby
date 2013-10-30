@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import trilby.nonheap.HugeAutoArray
+import trilby.nonheap.BitSet
 
 class ClassInfo {
 
@@ -46,7 +47,7 @@ class ClassInfo {
     private[this] val objectMap = new HugeAutoArray.OfInt(false)
     
     /** Class ID for next ClassDef we create. */
-    private[this] var nextClassId = 1
+    private[this] var maxClassId = 0
     
     private[this] val log = LoggerFactory.getLogger(getClass)
     
@@ -59,11 +60,11 @@ class ClassInfo {
     
     def addClassDef(name: String, heapId: Long,
             superHeapId: Long, fields: Array[Field]) = {
-        val classDef = new ClassDef(this, name, nextClassId, heapId, superHeapId, fields)
+        maxClassId += 1
+        val classDef = new ClassDef(this, name, maxClassId, heapId, superHeapId, fields)
         byName.put(classDef.name, classDef)
         byClassId.put(classDef.classId, classDef)
         byHeapId.put(classDef.heapId, classDef)
-        nextClassId += 1
         classDef
     }
     
@@ -135,6 +136,48 @@ class ClassInfo {
     
     def map[T](fn: ClassDef => T) =
         for (c <- byName.values) yield fn(c)
+    
+    def foreach(fn: ClassDef => Unit) =
+        byName.values.foreach(fn)
+    
+    /**
+     * Modify a bit set to include / exclude classes whose IDs match the
+     * match class(es) + superclasses.  Wildcards may suffix the name e.g
+     * <code>"java.util.*"</code>.
+     */
+    
+    def matchClasses(bits: BitSet, name: String, include: Boolean) = {
+            
+        var matched = false
+        
+        def mark(c: ClassDef) {
+            matched = true
+            if (include) {
+                bits.set(c.classId)
+            }
+            else {
+                bits.clear(c.classId)
+            }
+            c.subclasses.map(mark(_))
+        }
+        
+        if (name.endsWith(".*")) {
+            val prefix = name.dropRight(1)
+            for (c <- byName.values) {
+                if (c.name.startsWith(prefix)) {
+                    mark(c)
+                }
+            }
+        }
+        else {
+            val c = byName.get(name)
+            if (c != null) {
+                mark(c)
+            }
+        }
+        
+        matched
+    }
 }
 
 /**
@@ -169,6 +212,9 @@ class ClassDef(/** Who holds this def */
     
     /** offsets of reference fields, including supers; set by cook() */
     private var _refs: Array[Int] = null
+    
+    /** subclasses, after all class are cook()ed */
+    private val _subClasses = new ArrayBuffer[ClassDef]()
     
     /** has the information been cook()ed */
     private[this] var _cooked = false
@@ -230,6 +276,12 @@ class ClassDef(/** Who holds this def */
     def span() = cook()._span
     
     /**
+     * Return subclass ClassDefs
+     */
+    
+    def subclasses() = cook()._subClasses.toList
+    
+    /**
      * Returns true if this class inherits from the indicated class.  Same caveats
      * as {@link #superDef}.
      */
@@ -254,6 +306,7 @@ class ClassDef(/** Who holds this def */
                 panic("No super def for " + this)
             }
             _super.cook()
+            _super._subClasses.add(this)
         }
         
         _span = if (isRoot) 0 else _super.span
