@@ -87,7 +87,7 @@ object Main {
             val input = Stream continually { readLine() }
             for (line <- input takeWhile {_ != null} map {_.trim} filter {_.length > 0}) {
                 protect { 
-                    new GraphQueryParser(heap).parseFinder(line).apply() match {
+                    new GraphQueryParser(heap).parseCommand(line).apply() match {
                         case p: Printable =>
                             val out = new java.io.PrintWriter(System.out)
                             p.print(out)

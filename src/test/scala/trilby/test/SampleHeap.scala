@@ -18,7 +18,7 @@ object SampleHeap {
     }
     
     def query(s: String) = {
-        val query = new GraphQueryParser(heap).parseFinder(s)
+        val query = new GraphQueryParser(heap).parseCommand(s)
         query.apply().asInstanceOf[ClassHistogram]
     }
     

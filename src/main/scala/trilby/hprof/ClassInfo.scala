@@ -51,6 +51,8 @@ class ClassInfo {
     
     private[this] val log = LoggerFactory.getLogger(getClass)
     
+    def numClasses = maxClassId
+    
     /**
      * @param demangled class name
      * @param heapId As read from the HPROF file

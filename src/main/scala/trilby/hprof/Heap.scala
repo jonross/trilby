@@ -35,8 +35,12 @@ import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import trilby.nonheap.HugeAutoArray
 import trilby.util.SmallCounts
+import trilby.nonheap.BitSet
 
-class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData {
+class Heap(val idSize: Int, val fileDate: Date) 
+    extends SizeData with GCRootData with SkipSet {
+    
+    def heap = this
     
     /** True if 64-bit VM */
     val longIds = idSize == 1
@@ -260,6 +264,8 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
             addReference(fake, toObjectHid)
         }
         
+        skipNone()
+        
         staticRefs.free()
         staticRefs = null // allow GC
         
@@ -298,10 +304,7 @@ class Heap(val idSize: Int, val fileDate: Date) extends SizeData with GCRootData
     def forEachReferee(oid: Int, fn: Int => Unit) = 
         graph.forEachReferee(oid, fn)
 
-
     def maxId = _maxId()
-    
-    def elideTypes(types: String) { }
 }
 
 /**
@@ -382,5 +385,45 @@ trait GCRootData {
             log.info(goodRoots + " GC roots")
         else
             log.warn((goodRoots + badRoots) + " GC roots, " + badRoots + " bad")
+    }
+}
+
+trait SkipSet {
+    
+    def heap: Heap
+    
+    private var history: List[String] = null
+    private var bits: BitSet = null
+    
+    def showSkippedClasses() {
+        history.foreach(println)
+    }
+    
+    def shouldSkip(cid: Int) =
+        bits.get(cid)
+    
+    def skipClasses(what: String, skip: Boolean) = (what, skip) match {
+        case ("none", true) =>
+            skipNone
+        case ("none", false) =>
+            skipAll()
+        case ("all", true) =>
+            skipAll()
+        case ("all", false) =>
+            skipNone()
+        case (_, _) =>
+            history = history :+ what
+            heap.classes.matchClasses(bits, what, skip)
+    }
+    
+    def skipNone() {
+        history = List[String]()
+        bits = new BitSet(heap.classes.numClasses, true)
+    }
+    
+    def skipAll() {
+        history = List("all")
+        for (c <- heap.classes)
+            bits.set(c.classId)
     }
 }
