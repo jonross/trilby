@@ -85,11 +85,9 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
         "noskip" ~ types ^^ { case _ ~ t => () => heap.skipClasses(t, false) } |
         "noskip" ^^         { case _ => () => heap.showSkippedClasses() }
         
-    type Fn = () => Any
-    def fnid[T] = { x: T => x}
-        
-    def action: Parser[Fn] =
-        fullQuery ^^ fnid | miscfn ^^ fnid
+    def action: Parser[() => Any] =
+        fullQuery ^^  { case x => x } |
+        miscfn ^^     { case x => x }
 
     def parseCommand(text : String) = parseAll(action, text) match {
         case Error(msg, next) => sys.error(msg)

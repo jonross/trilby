@@ -92,6 +92,7 @@ object Main {
                             val out = new java.io.PrintWriter(System.out)
                             p.print(out)
                             out.flush()
+                        case x: Unit =>
                     }
                 }
             }

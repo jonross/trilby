@@ -412,18 +412,22 @@ trait SkipSet {
         case ("all", false) =>
             skipNone()
         case (_, _) =>
-            history = history :+ what
-            heap.classes.matchClasses(bits, what, skip)
-    }
-    
-    def skipNone() {
-        history = List[String]()
-        bits = new BitSet(heap.classes.numClasses, true)
+            if (heap.classes.matchClasses(bits, what, skip)) {
+                history = history :+ (if (skip) "+ " + what else "- " + what)
+            }
+            else {
+                "No classes match %s\n".format(what).printable
+            }
     }
     
     def skipAll() {
         history = List("all")
         for (c <- heap.classes)
             bits.set(c.classId)
+    }
+    
+    def skipNone() {
+        history = Nil
+        bits = new BitSet(heap.classes.numClasses, true)
     }
 }

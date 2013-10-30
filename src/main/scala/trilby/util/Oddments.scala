@@ -37,6 +37,14 @@ object Oddments {
         def print(out: PrintWriter)
     }
     
+    implicit def toPrintable(o: Object) = new {
+        def printable = new Printable {
+            def print(out: PrintWriter) {
+                out.print(o.toString())
+            }
+        }
+    }
+    
     def using[C <: {def close(): Unit}, B](resource: C)(fn: C => B): B =
         try { fn(resource) } finally { resource.close() }                
         
