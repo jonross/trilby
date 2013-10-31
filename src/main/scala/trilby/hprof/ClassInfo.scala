@@ -228,15 +228,6 @@ class ClassDef(/** Who holds this def */
     val isRoot = name.equals("java.lang.Object")
     
     /**
-     * Do we skip instances where directed to by query paths.
-     */
-    
-    val isElided = (name startsWith "java.util.") || 
-        (name startsWith "com.TripResearch.lang.")
-        (name equals "com.TripResearch.object.LRUHashMap") ||
-        (name startsWith "gnu.trove.")
-    
-    /**
      * Record an additional instance of this class, of the indicated size.
      */
     

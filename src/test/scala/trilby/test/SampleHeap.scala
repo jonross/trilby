@@ -17,10 +17,11 @@ object SampleHeap {
         new HProfReader(data).read()
     }
     
-    def query(s: String) = {
-        val query = new GraphQueryParser(heap).parseCommand(s)
-        query.apply().asInstanceOf[ClassHistogram]
-    }
+    def query(s: String) =
+        new GraphQueryParser(heap).parseCommand(s).apply()
+    
+    def histo(s: String) =
+        query(s).asInstanceOf[ClassHistogram]
     
     def classNamed(s: String) =
         heap.classes.getByName(s)

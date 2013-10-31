@@ -69,8 +69,8 @@ case class Target(/** The type name / wildcard, e.g. "ArrayList" */
                   varName: Option[String],
                   /** Follow refs to this node; true if "->", false if "<-" */
                   to: Boolean, 
-                  /** Skip instances of elidable classes */
-                  elide: Boolean)
+                  /** Skip instances of skippable classes */
+                  skip: Boolean)
     
 /**
  * Implemented by classes that can receive a set of object IDs at

@@ -399,8 +399,8 @@ trait SkipSet {
         history.foreach(println)
     }
     
-    def shouldSkip(cid: Int) =
-        bits.get(cid)
+    def shouldSkip(c: ClassDef) =
+        bits.get(c.classId)
     
     def skipClasses(what: String, skip: Boolean) = (what, skip) match {
         case ("none", true) =>

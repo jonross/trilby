@@ -51,19 +51,20 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
     
     /**
      * Build a chain of target finders, each referring to the next.
-     * Last one refers to null.  All but the first can elide objects.
+     * Last one refers to null.  All but the first can skip objects.
      */
     
     private def buildFinders(targets: List[Target], index: Int = 0,
-                             canElide: Boolean = false): Finder = 
+                             canSkip: Boolean = false): Finder = 
         if (targets == Nil) null
-        else new Finder(targets.head, index, canElide, 
+        else new Finder(targets.head, index, canSkip, 
                         buildFinders(targets.tail, index + 1, true))
     
     def run() = { 
         var count = 0
         heap forEachInstance { id => {
-            if (! heap.classes.getForObjectId(id).isElided) {
+            val classDef = heap.classes.getForObjectId(id)
+            if (! heap.shouldSkip(classDef)) {
                 count += 1
                 if (count % 10000 == 0) {
                     // printf("Checked %d\n", count)
@@ -74,7 +75,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         query.acceptor
     }
     
-    class Finder(val target: Target, index: Int, canElide: Boolean, next: Finder) {
+    class Finder(val target: Target, index: Int, canSkip: Boolean, next: Finder) {
         
         // Class matched by the finder target
         val baseClass = heap.classes getByName target.types
@@ -82,8 +83,8 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         // Class IDs of the base class and all subclasses
         val matchingClasses = new TIntByteHashMap()
         
-        // What object IDs have been elided, by this finder, at this pass
-        val elided = new TIntIntHashMap
+        // What object IDs have been skipped, by this finder, at this pass
+        val skipped = new TIntIntHashMap
         
         // What pass through this step is this
         var pass = 0
@@ -151,19 +152,19 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                     query.acceptor.accept(funArgs)
                 }
             }
-            else if (canElide && target.elide && classDef.isElided) {
-                // Elided object; search adjacent nodes with the same finder.
+            else if (canSkip && target.skip && heap.shouldSkip(classDef)) {
+                // Skipped object; search adjacent nodes with the same finder.
                 // This uses a manual stack because we cant' @tailrec the
                 // search and if we recurse we can blow up the Java stack while
                 // eliding long object paths (like through a linked list.)
                 // Furthermore, we must reset the state of what objects have
-                // been elided at this step for each pass, otherwise if (for
+                // been skipped at this step for each pass, otherwise if (for
                 // example) we get 'String x <<- MyObject y' and the strings
-                // are held in a data structure whose internals are elided, we
+                // are held in a data structure whose internals are skipped, we
                 // will ignore all paths from all x to y after the first one.
                 // Unfortunately for heaps with large such structures, the
-                // elided set can get pretty big.  No easy way out, at this point.
-                if (elided.put(id, pass) < pass) {
+                // skipped set can get pretty big.  No easy way out, at this point.
+                if (skipped.put(id, pass) < pass) {
                     if (target.to)
                         heap.forEachReferee(id, push)
                     else
