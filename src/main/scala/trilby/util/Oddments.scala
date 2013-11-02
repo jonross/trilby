@@ -30,6 +30,7 @@ import java.io.StringWriter
 import org.codehaus.jackson.JsonGenerator
 import scala.collection.mutable.ListBuffer
 import java.io.PrintWriter
+import trilby.nonheap.BitSet
 
 object Oddments {
     
@@ -112,5 +113,24 @@ object Oddments {
                 error(name + " tag " + tag + " out of range")
             else
                 table(tag)
+    }
+    
+    trait DFS {
+        def maxNode: Int
+        def visit(node: Int): Unit
+        private val stack = new IntStack()
+        private val seen = new BitSet(maxNode + 1, true)
+        def add(node: Int) {
+            if (! seen.get(node)) {
+                stack.push(node)
+                seen.set(node)
+            }
+        }
+        def run() {
+            while (! stack.isEmpty) {
+                val node = stack.pop()
+                visit(node)
+            }
+        }
     }
 }

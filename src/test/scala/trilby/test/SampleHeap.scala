@@ -4,7 +4,7 @@ import trilby.hprof.HProfReader
 import trilby.util.MappedHeapData
 import java.io.File
 import trilby.nonheap.NHUtils
-import trilby.query.GraphQueryParser
+import trilby.query.CommandParser
 import trilby.reports.ClassHistogram
 
 object SampleHeap {
@@ -18,7 +18,7 @@ object SampleHeap {
     }
     
     def query(s: String) =
-        new GraphQueryParser(heap).parseCommand(s).apply()
+        new CommandParser(heap).parseCommand(s).apply()
     
     def histo(s: String) =
         query(s).asInstanceOf[ClassHistogram]

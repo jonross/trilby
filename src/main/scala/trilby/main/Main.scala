@@ -28,7 +28,7 @@ import trilby.hprof.Heap
 import trilby.hprof.HProfReader
 import trilby.reports.ClassHistogram
 import trilby.util.ObjectSet
-import trilby.query.GraphQueryParser
+import trilby.query.CommandParser
 import trilby.util.MappedHeapData
 import trilby.util.Oddments._
 import trilby.reports.GraphSearch2
@@ -87,7 +87,7 @@ object Main {
             val input = Stream continually { readLine() }
             for (line <- input takeWhile {_ != null} map {_.trim} filter {_.length > 0}) {
                 protect { 
-                    new GraphQueryParser(heap).parseCommand(line).apply() match {
+                    new CommandParser(heap).parseCommand(line).apply() match {
                         case p: Printable =>
                             val out = new java.io.PrintWriter(System.out)
                             p.print(out)

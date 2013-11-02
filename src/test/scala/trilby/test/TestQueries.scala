@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 import java.io.File
 import trilby.util.MappedHeapData
 import trilby.hprof.HProfReader
-import trilby.query.GraphQueryParser
+import trilby.query.CommandParser
 import SampleHeap._
 import trilby.reports.ClassHistogram
     

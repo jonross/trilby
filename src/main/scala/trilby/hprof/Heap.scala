@@ -277,7 +277,7 @@ class Heap(val idSize: Int, val fileDate: Date)
             graphBuilder.mapHeapIds(objectIdMap)
         }
         
-        optimizeGCRoots(objectIdMap)
+        resolveGCRoots(objectIdMap)
         
         // As of this point we no longer need the ID mapping.
         
@@ -292,6 +292,10 @@ class Heap(val idSize: Int, val fileDate: Date)
         log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
         graphBuilder.destroy()
         graphBuilder = null // allow GC
+        
+        time("Find live objects") {
+            findLiveObjects()
+        }
     }
     
     def forEachInstance(fn: Int => Unit) =
@@ -341,13 +345,23 @@ trait SizeData {
 
 trait GCRootData {
     
+    def heap: Heap
     def log: Logger
     
     /** Temporary object, records heap IDs of GC roots */
-    private[this] var tmpGCRoots = new HugeAutoArray.OfLong(false)
+    private[this] var tmpGCRoots = new HugeAutoArray.OfLong(true)
     
     /** After heap read, {@link #tmpGCRoots} is mapped to these */
-    private[this] var gcRoots: TIntByteMap = null
+    private[this] var gcRoots: Array[Int] = null
+    
+    /** Indicates which objects are live */
+    private[this] var liveObjects: BitSet = null
+    
+    /** Hide unreachable objects in analyses */
+    var hideGarbage = false // leave off until fully debugged
+    
+    private[this] var goodRoots = 0
+    private[this] var badRoots = 0
     
     /**
      * Record a GC root.
@@ -357,17 +371,15 @@ trait GCRootData {
         tmpGCRoots add id
     }
     
-    def optimizeGCRoots(idMap: IdMap) {
+    def resolveGCRoots(idMap: IdMap) {
         
-        var goodRoots = 0
-        var badRoots = 0
-        gcRoots = new TIntByteHashMap()
+        gcRoots = new Array[Int](tmpGCRoots.size)
         
         for (i <- 0 until tmpGCRoots.size) {
-            val rootHid = tmpGCRoots get i
+            val rootHid = tmpGCRoots.get(i)
             val rootOid = idMap.map(rootHid, false)
             if (rootOid != 0) { 
-                gcRoots.put(rootOid, 0)
+                gcRoots(goodRoots) = rootOid
                 goodRoots += 1
             }
             else {
@@ -386,6 +398,27 @@ trait GCRootData {
         else
             log.warn((goodRoots + badRoots) + " GC roots, " + badRoots + " bad")
     }
+    
+    def findLiveObjects() {
+        liveObjects = new BitSet(heap.maxId + 1, true)
+        var reachable = 0
+        new DFS {
+            def maxNode = heap.maxId
+            val adder = (node: Int) => add(node)
+            def visit(node: Int) {
+                reachable += 1
+                liveObjects.set(node)
+                heap.forEachReferee(node, adder)
+            }
+            for (i <- 0 until goodRoots) {
+                add(gcRoots(i))
+            }
+        }.run()
+        log.info("%d of %d objects are live".format(reachable, heap.maxId))
+    }
+    
+    def isLive(oid: Int) =
+        liveObjects.get(oid)
 }
 
 trait SkipSet {

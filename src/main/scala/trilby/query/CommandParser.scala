@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 import trilby.hprof.Heap
 
-class GraphQueryParser(heap: Heap) extends RegexParsers
+class CommandParser(heap: Heap) extends RegexParsers
 {
     // matches e.g. "java.lang.Object", "int[][]", "com.foo.*"
 
@@ -83,7 +83,9 @@ class GraphQueryParser(heap: Heap) extends RegexParsers
         "skip" ~ types ^^   { case _ ~ t => () => heap.skipClasses(t, true) } |
         "skip" ^^           { case _ => () => heap.showSkippedClasses() } |
         "noskip" ~ types ^^ { case _ ~ t => () => heap.skipClasses(t, false) } |
-        "noskip" ^^         { case _ => () => heap.showSkippedClasses() }
+        "noskip" ^^         { case _ => () => heap.showSkippedClasses() } |
+        "set" ~ "garbage" ^^   { case _ => () => heap.hideGarbage = false } |
+        "set" ~ "nogarbage" ^^ { case _ => () => heap.hideGarbage = true }
         
     def action: Parser[() => Any] =
         fullQuery ^^  { case x => x } |

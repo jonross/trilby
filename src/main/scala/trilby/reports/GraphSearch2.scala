@@ -69,7 +69,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                 if (count % 10000 == 0) {
                     // printf("Checked %d\n", count)
                 }
-                finder check id
+                finder.check(id)
             }
         } }
         query.acceptor
@@ -121,10 +121,12 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
          */
         
         def check(id: Int) {
-            pass += 1
-            doCheck(id)
-            while (!stack.isEmpty)
-                doCheck(stack.pop())
+            if (! heap.hideGarbage || heap.isLive(id)) {
+                pass += 1
+                doCheck(id)
+                while (!stack.isEmpty)
+                    doCheck(stack.pop())
+            }
         }
         
         private def doCheck(id: Int) = {
