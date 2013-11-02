@@ -67,8 +67,9 @@ class ObjectGraphBuilder {
     /** Synthetic object IDs at source of each edge */
     private[this] val refsFrom = new HugeAutoArray.OfInt(false)
     
-    /** Heap object IDs at destination of each edge */
-    private[this] val refsTo = new HugeAutoArray.OfInt(false)
+    /** Heap object IDs at destination of each edge, up to 5 bytes of data */
+    private[this] val refsToLo4 = new HugeAutoArray.OfInt(false) 
+    private[this] val refsToHi1 = new HugeAutoArray.OfByte(false) 
     
     /** # of unmappable references encountered */
     private var _numDead = 0
@@ -82,7 +83,8 @@ class ObjectGraphBuilder {
     
     def addRef(fromId: Int, toId: Long) {
         refsFrom.add(fromId)
-        refsTo.add(toId.asInstanceOf[Int])
+        refsToLo4.add((toId & 0xFFFFFFFF).asInstanceOf[Int])
+        refsToHi1.add((toId >> 32).asInstanceOf[Byte])
     }
     
     /**
@@ -92,10 +94,10 @@ class ObjectGraphBuilder {
     def mapHeapIds(idMap: IdMap) {
         val dead = for (t <- 0 to 3 par) yield {
             var dead = 0
-            for (i <- t until refsTo.size by 4) {
-                val unmapped = refsTo.get(i) & 0xFFFFFFFFL
+            for (i <- t until refsToLo4.size by 4) {
+                val unmapped = (refsToHi1.get(i) << 32L) | (refsToLo4.get(i) & 0xFFFFFFFFL)
                 val mapped = idMap.map(unmapped, false)
-                refsTo.set(i, mapped)
+                refsToLo4.set(i, mapped)
                 if (mapped == 0)
                     dead += 1
             }
@@ -108,7 +110,8 @@ class ObjectGraphBuilder {
     
     def destroy() {
         refsFrom.free()
-        refsTo.free()
+        refsToLo4.free()
+        refsToHi1.free()
     }
     
     /* Return # of references */
@@ -120,7 +123,7 @@ class ObjectGraphBuilder {
     def edges(fn: (Int, Int) => Unit) =
         for (i <- 0 until refsFrom.size) {
             val from = refsFrom.get(i)
-            val to = refsTo.get(i)
+            val to = refsToLo4.get(i)
             if (to != 0)
                 fn(from, to)
         }

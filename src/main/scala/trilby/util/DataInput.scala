@@ -46,24 +46,16 @@ trait HeapData {
     def readUByte(): Int
     def readUShort(): Int
     
-    def readId() = compressId(if (longIds) readLong() else readInt())
+    def readId() = if (longIds) readLong() else readInt()
+    def readPrimaryId() = checkId(if (longIds) readLong() else readInt())
     
-    protected def compressId(hid: Long) = {
-        val xid = if (longIds) {
-            if ((hid & 0x7) != 0)
-                panic("Non-aligned heap ID: " + hid)
-            hid >>> 3
-        }
-        else {
-            if ((hid & 0x3) != 0)
-                panic("Non-aligned heap ID: " + hid)
-            hid >>> 2
-        }
-        // I'm finding there are corrupted IDs in HPROF dumps.  Can't do this
-        // check anymore.  Have to hope they aren't critical records.
-        // if (xid > 0xFFFFFFFFL)
-        //     panic("ID too big: %x".format(hid), new Exception())
-        xid
+    def checkId(hid: Long) = {
+        // We can't use this on all IDs in the dump because some are simply corrupt, so we
+        // assume they're dead if we find them as references.  If this panics on a primary
+        // ID, must expand GraphBuilder to handle > 5 bytes
+        if ((hid & 0xFFFFFFFFFFL) != hid)
+            panic("ID too big: %x".format(hid), new Exception())
+        hid
     }
     
     def readAll(buf: Array[Byte], offset: Int, count: Int)
@@ -107,7 +99,8 @@ class MappedHeapData(private val channel: FileChannel,
     
     def readInt(pos: Long) = mapped.getInt(actual(pos))
     def readLong(pos: Long) = mapped.getLong(actual(pos))
-    def readId(pos: Long): Long = compressId(if (longIds) readLong(pos) else readInt(pos))
+    def readId(pos: Long): Long = if (longIds) readLong(pos) else readInt(pos)
+    def readPrimaryId(pos: Long): Long = checkId(if (longIds) readLong(pos) else readInt(pos))
     
     def actual(pos: Long) = (pos - offset).asInstanceOf[Int]
     
