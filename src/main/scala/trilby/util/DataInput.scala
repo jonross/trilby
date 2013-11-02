@@ -50,11 +50,11 @@ trait HeapData {
     def readPrimaryId() = checkId(if (longIds) readLong() else readInt())
     
     def checkId(hid: Long) = {
-        // We can't use this on all IDs in the dump because some are simply corrupt, so we
-        // assume they're dead if we find them as references.  If this panics on a primary
-        // ID, must expand GraphBuilder to handle > 5 bytes
-        if ((hid & 0xFFFFFFFFFFL) != hid)
-            panic("ID too big: %x".format(hid), new Exception())
+        // Can't do this.  I've found some IDs in the heap are simply corrupt.  If they're
+        // reference IDs, we'll just mark them dead.  But it does mean we can't tell when
+        // an ID is too big for GraphBuilder to compress.
+        // if ((hid & 0xFFFFFFFFFFL) != hid)
+            // panic("ID too big: %x".format(hid), new Exception())
         hid
     }
     

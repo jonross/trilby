@@ -92,7 +92,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
 
     private def readGCRoot(kind: String, skip: Int) {
         data.demand(heap.idSize)
-        val id = data.readId()
+        val id = data.readPrimaryId()
         if (skip > 0) 
             data.skip(skip)
         else if (skip == -1) 
@@ -115,9 +115,9 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         // instance size    int         (usage tbd)
 
         data.demand(7 * heap.idSize + 8)
-        val classId = data.readId()
+        val classId = data.readPrimaryId()
         data.skip(4)
-        val superclassId = data.readId()
+        val superclassId = data.readPrimaryId()
         data.skip(5 * heap.idSize + 4)
 
         // Skip over constant pool
@@ -133,7 +133,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
 
         data.demand(2)
         for (i <- 0 until data.readUShort) {
-            val fieldNameId = data.readId()
+            val fieldNameId = data.readPrimaryId()
             val jtype = readJavaType()
             if (jtype.isRef) {
                 val toId = data.readId()
@@ -154,7 +154,7 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         
         data.demand(numFields * (1 + heap.idSize))
         for (i <- 0 until numFields) {
-            fieldNameIds(i) = data.readId()
+            fieldNameIds(i) = data.readPrimaryId()
             fieldInfo(i) = readJavaType()
         }
 
@@ -201,9 +201,9 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         // length           int
     
         data.demand(2 * (4 + heap.idSize))
-        val hid = data.readId()
+        val hid = data.readPrimaryId()
         data.skip(4)
-        val classHid = data.readId()
+        val classHid = data.readPrimaryId()
         val size = data.readInt()
         val offset = data.position
         
@@ -251,14 +251,14 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
         // # elements       int
         
         data.demand(heap.idSize + 8)
-        val id = data.readId()
+        val id = data.readPrimaryId()
         data.skip(4)
         var count = data.readInt()
         val offset = data.position
         // printf("Array at %d\n", offset)
 
         if (isObjects) {
-            val classId = data.readId()
+            val classId = data.readPrimaryId()
             // Assume compressed OOPS
             heap.addInstance(id, classId, offset, count * 4 + 2 * heap.idSize)
             val mapped = heap.mapId(id)

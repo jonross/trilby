@@ -129,7 +129,7 @@ class HProfReader (data: MappedHeapData) {
         if (length > 0) data.skip(length)
     
     private def handleUTF8Record(length: Long) {
-        val hid = data.readId()
+        val hid = data.readPrimaryId()
         val nBytes = length.asInstanceOf[Int] - heap.idSize
         if (nBytes > buf.length)
             buf = new Array[Byte](nBytes)
@@ -141,9 +141,9 @@ class HProfReader (data: MappedHeapData) {
     
     private def handleLoadClassRecord(length: Long) {
         data.readInt() // skip classSerial
-        val hid = data.readId()
+        val hid = data.readPrimaryId()
         data.readInt() // skip stackSerial
-        val nameHid = data.readId()
+        val nameHid = data.readPrimaryId()
         heap.addLoadedClass(hid, nameHid)
     }
     
