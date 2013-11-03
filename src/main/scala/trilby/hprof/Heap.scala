@@ -363,12 +363,8 @@ trait GCRootData {
     private[this] var goodRoots = 0
     private[this] var badRoots = 0
     
-    /**
-     * Record a GC root.
-     */
-
     def addGCRoot(id: Long, desc: String) {
-        tmpGCRoots add id
+        tmpGCRoots.add(id)
     }
     
     def resolveGCRoots(idMap: IdMap) {
@@ -436,14 +432,8 @@ trait SkipSet {
         bits.get(c.classId)
     
     def skipClasses(what: String, skip: Boolean) = (what, skip) match {
-        case ("none", true) =>
+        case ("none", _) =>
             skipNone
-        case ("none", false) =>
-            skipAll()
-        case ("all", true) =>
-            skipAll()
-        case ("all", false) =>
-            skipNone()
         case (_, _) =>
             if (heap.classes.matchClasses(bits, what, skip)) {
                 history = history :+ (if (skip) "+ " + what else "- " + what)
@@ -451,12 +441,6 @@ trait SkipSet {
             else {
                 "No classes match %s\n".format(what).printable
             }
-    }
-    
-    def skipAll() {
-        history = List("all")
-        for (c <- heap.classes)
-            bits.set(c.classId)
     }
     
     def skipNone() {
