@@ -52,4 +52,25 @@ class TestQueries extends FunSuite {
         assert(c2.count == 3 * BASE_COUNT)
         assert(c2.nbytes == 16 * 3 * BASE_COUNT)
     }
+    
+    test("Static references") {
+        
+        query("skip none")
+        var h1 = histo("histo x, x of trilby.util.Thing1.__CLASS ->> Long x")
+        var c1 = h1.counts.get(classNamed("Long").classId)
+        assert(c1 == null)
+        
+        query("skip java.util.*")
+        query("skip java.lang.Object[]")
+        h1 = histo("histo x, x of trilby.util.Thing1.__CLASS ->> Long x")
+        c1 = h1.counts.get(classNamed("Long").classId)
+        assert(c1.count == 100)
+        assert(c1.nbytes == 1600)
+        
+        val h2 = histo("histo x, x of trilby.util.Thing2.__CLASS ->> Long x")
+        val c2 = h2.counts.get(classNamed("Long").classId)
+        assert(c2.count == 200)
+        assert(c2.nbytes == 3200)
+        
+    }
 }

@@ -46,7 +46,6 @@ public class GenHeap
             m1.put(i, String.valueOf(i));
         }
 
-        Random random = new Random();
         List<Thing1> list = new ArrayList<>();
         
         for (int i = 1; i <= passes; i++) {
@@ -79,10 +78,14 @@ class MyHashMap<K,V> extends HashMap<K,V>
 
 /**
  * Other classes for same
- *
  */
 
 class Thing1 {
+    private final static List<Long> extras = new ArrayList<>();
+    static {
+        for (long i = 0; i < 100; i++)
+            extras.add(i);
+    }
     Thing2[] things;
     Thing1(Thing2[] t) {
         things = t;
@@ -90,6 +93,11 @@ class Thing1 {
 }
  
 class Thing2 {
+    private final static List<Long> extras = new ArrayList<>();
+    static {
+        for (long i = 0; i < 200; i++)
+            extras.add(i);
+    }
     Integer value;
     Thing2(int v) {
         value = v;

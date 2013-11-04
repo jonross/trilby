@@ -21,6 +21,8 @@
 
 package trilby.hprof
 
+import scala.collection.mutable
+
 import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import gnu.trove.map.hash.TLongLongHashMap
@@ -245,23 +247,24 @@ class Heap(val idSize: Int, val fileDate: Date)
         // Fabricate a class object to hold static references for each class.  This
         // is done after the heap read is complete so we can guarantee unique HIDs.
         
-        val fakes = new TLongIntHashMap()
+        val fakes = new mutable.HashMap[Long,(Int,Long)]
         val superHid = classes.getByName("java.lang.Class").heapId
         val noFields = new Array[Java.Type](0)
         val noNames = new Array[String](0)
         
         for (i <- 0 until staticRefs.size by 2) {
-            val fromClassHid = staticRefs.get(i)
-            val toObjectHid = staticRefs.get(i+1)
-            var fake = fakes.get(fromClassHid)
-            if (fake == 0) {
-                val classDef = classes.getByHeapId(fromClassHid)
+            val fromClass = staticRefs.get(i)
+            val toObject = staticRefs.get(i+1)
+            val (fakeId, fakeHid) = fakes.getOrElseUpdate(fromClass, {
+                val classDef = classes.getByHeapId(fromClass)
                 val fakeName = classDef.name + ".__CLASS"
                 val fakeDef = addClassDef(fakeName, fabricateHeapId(), superHid, noFields, noNames)
-                fake = addInstance(fabricateHeapId(), fakeDef.heapId, fabricateOffset(), 0)
-                fakes.put(fromClassHid, fake)
-            }
-            addReference(fake, toObjectHid)
+                val fakeHid = fabricateHeapId()
+                val fakeId = addInstance(fakeHid, fakeDef.heapId, fabricateOffset(), 0)
+                (fakeId, fakeHid)
+            })
+            addReference(fakeId, toObject)
+            addGCRoot(fakeHid, "loaded class")
         }
         
         skipNone()
@@ -358,7 +361,7 @@ trait GCRootData {
     private[this] var liveObjects: BitSet = null
     
     /** Hide unreachable objects in analyses */
-    var hideGarbage = false // leave off until fully debugged
+    var hideGarbage = true // leave off until fully debugged
     
     private[this] var goodRoots = 0
     private[this] var badRoots = 0
