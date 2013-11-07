@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ package trilby.nonheap
 class BitSet(size: Int, onHeap: Boolean)
 {
     private val SHIFT = 6 // 1 << SHIFT = 64 bits in a long
-    private val bits = new HugeArray.OfLong(size / 4, onHeap) // :-( fix
+    private val bits = new HugeArray.OfLong(1 + ((size - 1) / 64), onHeap) // :-( fix
     
     def free() = bits.free()
     

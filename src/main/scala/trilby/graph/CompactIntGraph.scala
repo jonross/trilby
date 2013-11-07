@@ -43,8 +43,8 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
 {
     private[this] val log = LoggerFactory.getLogger(getClass)
     
-    private[this] val in = new Edges(maxId, false)
-    private[this] val out = new Edges(maxId, true)
+    private[this] val in = new Edges(false)
+    private[this] val out = new Edges(true)
     private[this] var numEdges = 0
     
     time("Generating degree counts") {
@@ -69,10 +69,10 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         out.free()
     }
     
-    private class Edges(maxId: Int, out: Boolean)
+    private class Edges(out: Boolean)
     {
         /** For an offset N, its bit is set here if it starts an edge list */
-        private[this] val boundaries = new BitSet(maxId + 1, false)
+        private[this] var boundaries: BitSet = null
         
         /** Edge lists */
         private[this] var edges: HugeArray.OfInt = null
@@ -92,6 +92,7 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         def fill(numEdges: Int) {
             
             edges = new HugeArray.OfInt(numEdges + 1, false)
+            boundaries = new BitSet(numEdges + 1, false)
             log.info("Finding edge offsets")
             var nextOffset = 1
             
