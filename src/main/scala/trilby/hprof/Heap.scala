@@ -1,4 +1,4 @@
-/* Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
+/* Copyright (c) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -257,7 +257,7 @@ class Heap(val idSize: Int, val fileDate: Date)
             val toObject = staticRefs.get(i+1)
             val (fakeId, fakeHid) = fakes.getOrElseUpdate(fromClass, {
                 val classDef = classes.getByHeapId(fromClass)
-                val fakeName = classDef.name + ".__CLASS"
+                val fakeName = classDef.name + ".class"
                 val fakeDef = addClassDef(fakeName, fabricateHeapId(), superHid, noFields, noNames)
                 val fakeHid = fabricateHeapId()
                 val fakeId = addInstance(fakeHid, fakeDef.heapId, fabricateOffset(), 0)
