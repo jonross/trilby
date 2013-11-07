@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 by Jonathan Ross (jonross@alum.mit.edu)
+ * Copyright (c) 2012, 2013 by Jonathan Ross (jonross@alum.mit.edu)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,13 +48,12 @@ object Main {
     private var heap: Heap = null
     
     case class Options(val histogram: Boolean = false,
-                       val interactive: Boolean = false,
+                       val interactive: Boolean = true,
                        // val web: Boolean = false,
                        val heapFile: File = null) {
         
         def parse(options: List[String]): Options = options match {
-            case "--histo" :: _ => copy(histogram = true) parse options.tail
-            case "--inter" :: _ => copy(interactive = true) parse options.tail
+            case "--histo" :: _ => copy(histogram = true, interactive = false) parse options.tail
             // case "--web" :: _ => copy(web = true) parse options.tail
             case x :: _ if x(0) == '-' => die("Unknown option: " + x)
             case x :: Nil => copy(heapFile = new File(x))
@@ -77,7 +76,7 @@ object Main {
         
         if (options.interactive) {
             println("Entering interactive mode")
-            val useJLine = java.lang.Boolean getBoolean "trilby.use.jline"
+            val useJLine = java.lang.Boolean.getBoolean("trilby.use.jline")
             val readLine = if (useJLine) {
                 val reader = new ConsoleReader()
                 () => reader.readLine("> ")
