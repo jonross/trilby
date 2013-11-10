@@ -42,6 +42,8 @@ import javax.servlet.http.HttpServletResponse
 import com.google.common.io.ByteStreams
 import trilby.reports.FullHistogram
 import trilby.nonheap.NHUtils
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
 
 object Main {
     
@@ -49,11 +51,14 @@ object Main {
     
     case class Options(val histogram: Boolean = false,
                        val interactive: Boolean = true,
+                       val logLevel: Level = Level.WARN,
                        // val web: Boolean = false,
                        val heapFile: File = null) {
         
         def parse(options: List[String]): Options = options match {
+            case "--debug" :: _ => copy(logLevel = Level.DEBUG) parse options.tail
             case "--histo" :: _ => copy(histogram = true, interactive = false) parse options.tail
+            case "--info" :: _ => copy(logLevel = Level.INFO) parse options.tail
             // case "--web" :: _ => copy(web = true) parse options.tail
             case x :: _ if x(0) == '-' => die("Unknown option: " + x)
             case x :: Nil => copy(heapFile = new File(x))
@@ -63,9 +68,11 @@ object Main {
     
     def main(args: Array[String]) = protect {
         time("Session") {
+            val options = Options().parse(args.toList)
             PropertyConfigurator.configure(getClass.getResourceAsStream("log4j.properties"))
+            Logger.getRootLogger.setLevel(options.logLevel)
             NHUtils.initNow()
-            run(Options().parse(args.toList))
+            run(options)
         }
     }
     
