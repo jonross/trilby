@@ -4,6 +4,9 @@ import org.scalatest.FunSuite
 import trilby.graph.MutableIntGraph
 import trilby.graph.IntGraph
 import trilby.graph.CompactIntGraph
+import trilby.graph.Dominators
+import trilby.graph.Dominators
+import trilby.graph.Dominators
 
 class TestGraphs extends FunSuite {
     
@@ -115,18 +118,15 @@ class TestGraphs extends FunSuite {
             assert(i === (if (up) e.length else 0))
         }
         
-        /*
         if (doms == null)
             return;
         
-        Dominators d = new Dominators(g);
-        int[] idom = d.get();
-        for (int i = 1; i < doms.length; i++)
-            assertEquals(doms[i], idom[i]);
+        val d = new Dominators(g)
+        val idom = d.get()
+        for (i <- 1 until doms.length)
+            assert(doms(i) === idom(i))
         
-        d.destroy();
-        */
-        
+        d.free()
         g.free()
     }
 }
