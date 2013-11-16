@@ -424,13 +424,13 @@ trait GCRootData {
     def findLiveObjects() {
         liveObjects = new BitSet(heap.maxId + 1, true)
         var reachable = 0
-        new DFS {
+        new PreorderDFS {
             def maxNode = heap.maxId
             val adder = (node: Int) => add(node)
+            def addChildren(node: Int) = heap.forEachReferee(node, adder)
             def visit(node: Int) {
                 reachable += 1
                 liveObjects.set(node)
-                heap.forEachReferee(node, adder)
             }
             add(masterRoot)
         }.run()

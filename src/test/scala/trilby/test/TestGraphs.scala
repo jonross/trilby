@@ -124,11 +124,23 @@ class TestGraphs extends FunSuite {
         
         val d = new Dominators(g)
         var idom = d.get()
-        for (i <- 1 until doms.length)
+        for (i <- 1 until doms.length) {
             assert(doms(i) === idom(i))
+        }
         d.free()
         
-        // DominatorsOG.apply(g, x => true, List(1), true)
+        val domGraph = DominatorsOG.apply(g, 1, true)
+        for (v <- 1 until doms.length) {
+            var cur = domGraph.walkInEdges(v)
+            if (doms(v) == 0) {
+                assert(cur == 0)
+            }
+            else {
+                val w = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+                assert(domGraph.nextInEdge(cur) == 0)
+                assert(w == doms(v))
+            }
+        }
         
         g.free()
     }

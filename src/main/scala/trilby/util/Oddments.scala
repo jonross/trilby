@@ -102,23 +102,11 @@ object Oddments {
     private val tagmap = Splitter.on(',').withKeyValueSeparator("=").
         split("Z=boolean,C=char,F=float,D=double,B=byte,S=short,I=int,J=long")
         
-    class TagTable[T](name: String, entries: (Int, T)*) {
-        val table = {
-            val t = ListBuffer.fill(entries.maxBy(_._1)._1)(null.asInstanceOf[T])
-            entries.foreach(e => t(e._1) = e._2)
-            t
-        }
-        def apply(tag: Int) =
-            if (tag > 0 || tag >= table.length)
-                error(name + " tag " + tag + " out of range")
-            else
-                table(tag)
-    }
-    
     trait DFS {
         def maxNode: Int
         def visit(node: Int): Unit
-        private val stack = new IntStack()
+        def addChildren(node: Int): Unit
+        protected val stack = new IntStack()
         private val seen = new BitSet(maxNode + 1, true)
         def add(node: Int) {
             if (! seen.get(node)) {
@@ -126,10 +114,29 @@ object Oddments {
                 seen.set(node)
             }
         }
+    }
+    
+    trait PreorderDFS extends DFS {
         def run() {
             while (! stack.isEmpty) {
                 val node = stack.pop()
                 visit(node)
+                addChildren(node)
+            }
+        }
+    }
+    
+    trait PostorderDFS extends DFS {
+        def run() {
+            while (! stack.isEmpty) {
+                val node = stack.pop()
+                if (node > 0) {
+                    stack.push(-node)
+                    addChildren(node)
+                }
+                else {
+                    visit(-node)
+                }
             }
         }
     }

@@ -23,80 +23,95 @@
 package trilby.graph
 
 import trilby.nonheap.BitSet
+import trilby.util.Oddments._
 
 /**
- * Dominators finder tailored for object graphs.
+ * Dominators finder tailored for object graphs; assumes most object graph nodes
+ * are simply-dominated and removes them from the search.
  */
 
 object DominatorsOG {
     
-    def apply(g: IntGraph, use: Int => Boolean, roots: Seq[Int], onHeap: Boolean) = {
+    def apply(g: IntGraph, root: Int, onHeap: Boolean) = {
         
-        // Starting at leaves, hide nodes with single parents.
+        // Find simply-dominated nodes; these are nodes with one afferent node and
+        // efferent nodes that are themselves simply-dominated.
         
-        val seen = new BitSet(g.maxNode + 1, true)
-        val hide = new BitSet(g.maxNode + 1, true)
-        var hidden = 0
+        val simply = new BitSet(g.maxNode + 1, true)
+        var nSimply = 0
         
-        def shrinkFrom(_v: Int) {
-            var v = _v
-            while (!seen.get(v)) {
-                seen.set(v)
-                val cur = g.walkInEdges(v)
-                if (cur == 0 || g.nextInEdge(cur) != 0) {
-                    return // want exactly one inbound edge
+        new PostorderDFS {
+            val maxNode = g.maxNode
+            val adder = (node: Int) => add(node)
+            def addChildren(node: Int) {
+                var cur = g.walkOutEdges(node)
+                while (cur != 0) {
+                    add((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+                    cur = g.nextOutEdge(cur)
                 }
-                hide.set(v)
-                hidden += 1
-                v = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
             }
-        }
+            def visit(node: Int) {
+                var cur = g.walkInEdges(node)
+                if (cur == 0) {
+                    // printf("%d is not simply-dominated because in-degree == 0\n", node)
+                    return
+                }
+                if (g.nextInEdge(cur) != 0) {
+                    // printf("%d is not simply-dominated because in-degree > 1\n", node)
+                    return
+                }
+                cur = g.walkOutEdges(node)
+                while (cur != 0) {
+                    val child = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+                    if (!simply.get(child)) {
+                        // printf("%d is not simply-dominated because %d is not\n", node, child)
+                        return
+                    }
+                    cur = g.nextOutEdge(cur)
+                }
+                // printf("%d is simply-dominated\n", node)
+                simply.set(node)
+                nSimply += 1
+            }
+            add(root)
+        }.run()
         
-        for (v <- 1 to g.maxNode) {
-            if (! use(v)) {
-                hide.set(v)
-                hidden += 1
-            }
-            else if (g.outDegree(v) == 0) {
-                shrinkFrom(v)
-            }
-        }
-        
-        // Create mapping from non-hidden in g to h, and back.
-        // Reserve slot 1 in h2g for the master root.
+        // Create mapping from non-simply-dominated in g to h, and back.
+        // The master root in g is node 1 in h.
         
         val g2h = new Array[Int](g.maxNode + 1)
-        val h2g = new Array[Int](g.maxNode - hidden + 2)
+        val h2g = new Array[Int](g.maxNode + 1 - nSimply)
+        
+        g2h(root) = 1
+        h2g(1) = root
         
         var hv = 2
         for (v <- 1 to g.maxNode) {
-            if (! hide.get(v)) {
-                printf("map %d -> %d\n", v, hv)
+            if (v != root && ! simply.get(v)) {
+                // printf("map %d -> %d\n", v, hv)
                 g2h(v) = hv
                 h2g(hv) = v
                 hv += 1
             }
         }
         
-        // Create h from g + add master root.
+        // Create h from g
         
         def edges(fn: (Int, Int) => Unit) = {
             for (v <- 1 to g.maxNode) {
-                if (use(v)) {
+                val hv = g2h(v)
+                if (hv > 0) {
                     var cur = g.walkOutEdges(v)
                     while (cur != 0) {
                         val w = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
-                        if (! hide.get(w)) {
-                            printf("%d(%d) -> %d(%d)\n", g2h(v), v, g2h(w), w)
-                            fn(g2h(v), g2h(w))
+                        val hw = g2h(w)
+                        if (hw > 0) {
+                            // printf("ref %d(%d) -> %d(%d)\n", hv, v, hw, w)
+                            fn(hv, hw)
                         }
                         cur = g.nextOutEdge(cur)
                     }
                 }
-            }
-            for (root <- roots) {
-                printf("root 1 -> %d(%d)\n", g2h(root), root)
-                fn(1, g2h(root))
             }
         }
         
@@ -112,7 +127,7 @@ object DominatorsOG {
                 fn(h2g(doms(v)), h2g(v))
             }
             for (v <- 1 to g.maxNode) {
-                if (use(v) && hide.get(v)) {
+                if (simply.get(v)) {
                     val w = (g.walkInEdges(v) & 0xFFFFFFFFL).asInstanceOf[Int]
                     fn(w, v)
                 }
