@@ -7,6 +7,7 @@ import trilby.graph.CompactIntGraph
 import trilby.graph.Dominators
 import trilby.graph.Dominators
 import trilby.graph.Dominators
+import trilby.graph.DominatorsOG
 
 class TestGraphs extends FunSuite {
     
@@ -122,11 +123,13 @@ class TestGraphs extends FunSuite {
             return;
         
         val d = new Dominators(g)
-        val idom = d.get()
+        var idom = d.get()
         for (i <- 1 until doms.length)
             assert(doms(i) === idom(i))
-        
         d.free()
+        
+        // DominatorsOG.apply(g, x => true, List(1), true)
+        
         g.free()
     }
 }

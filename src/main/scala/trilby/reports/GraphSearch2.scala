@@ -121,7 +121,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
          */
         
         def check(id: Int) {
-            if (! heap.hideGarbage || heap.isLive(id)) {
+            if (heap.canUse(id)) {
                 pass += 1
                 doCheck(id)
                 while (!stack.isEmpty)

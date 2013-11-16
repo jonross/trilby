@@ -22,7 +22,6 @@
 package trilby.hprof
 
 import scala.collection.mutable
-
 import gnu.trove.map.hash.TIntObjectHashMap
 import gnu.trove.map.hash.TLongObjectHashMap
 import gnu.trove.map.hash.TLongLongHashMap
@@ -38,6 +37,8 @@ import org.slf4j.Logger
 import trilby.nonheap.HugeAutoArray
 import trilby.util.SmallCounts
 import trilby.nonheap.BitSet
+import trilby.graph.Dominators
+import trilby.graph.DominatorsOG
 
 class Heap(val idSize: Int, val fileDate: Date) 
     extends SizeData with GCRootData with SkipSet {
@@ -288,17 +289,25 @@ class Heap(val idSize: Int, val fileDate: Date)
         _maxId = () => m
         objectIdMap = null // allow GC
         
-        time ("Building object graph") {
+        time("Building object graph") {
             graph = new ObjectGraph2(this, maxId, graphBuilder)
         }
-        
-        log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
-        graphBuilder.destroy()
-        graphBuilder = null // allow GC
         
         time("Find live objects") {
             findLiveObjects()
         }
+        
+        /*
+        time("Finding dominators") {
+            val dom = new Dominators(graph.g)
+            DominatorsOG(graph.g, isLive, gcRoots, false)
+            dom.free()
+        }
+        */
+        
+        log.info("Read %d references, %d dead".format(graphBuilder.size, graphBuilder.numDead))
+        graphBuilder.destroy()
+        graphBuilder = null // allow GC
     }
     
     def forEachInstance(fn: Int => Unit) =
@@ -355,7 +364,7 @@ trait GCRootData {
     private[this] var tmpGCRoots = new HugeAutoArray.OfLong(true)
     
     /** After heap read, {@link #tmpGCRoots} is mapped to these */
-    private[this] var gcRoots: Array[Int] = null
+    private[hprof] var gcRoots: Array[Int] = null
     
     /** Indicates which objects are live */
     private[this] var liveObjects: BitSet = null
@@ -388,6 +397,7 @@ trait GCRootData {
         
         tmpGCRoots.free()
         tmpGCRoots = null // allow GC
+        gcRoots = gcRoots.toList.take(goodRoots).toArray
         
         // Not clear this warning is meaningful... most GC roots appear unmappable,
         // perhaps because only a few of the root records match heap objects.
@@ -416,8 +426,8 @@ trait GCRootData {
         log.info("%d of %d objects are live".format(reachable, heap.maxId))
     }
     
-    def isLive(oid: Int) =
-        liveObjects.get(oid)
+    def canUse(oid: Int) =
+        ! heap.hideGarbage || liveObjects.get(oid)
 }
 
 trait SkipSet {

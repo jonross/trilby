@@ -36,9 +36,6 @@ class ObjectGraph2(val heap: Heap, maxId: Int, val builder: ObjectGraphBuilder) 
     
     log.info("Building graph")
     val g = new CompactIntGraph(maxId, builder.edges(_), true)
-    log.info("Finding dominators")
-    // val dom = new Dominators(g)
-    // dom.destroy()
     
     def forEachReferrer(oid: Int, fn: Int => Unit) {
         var cur = g.walkInEdges(oid)
