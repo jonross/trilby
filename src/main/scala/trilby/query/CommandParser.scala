@@ -51,12 +51,16 @@ class CommandParser(heap: Heap) extends RegexParsers
 
     def pathFinder =
         vardecl ~ rep(
-            "<-" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, false, false) } |
-            "<<-" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, false, true) } |
-            "->" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, true, false) } |
-            "->>" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, true, true) }
+            "<-" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, false, false, false) } |
+            "<<-" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, false, true, false) } |
+            "->" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, true, false, false) } |
+            "->>" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, true, true, false) } |
+            "<=" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, false, false, true) } |
+            "<<=" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, false, true, true) } |
+            "=>" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, true, false, true) } |
+            "=>>" ~ vardecl ^^ { case _ ~ v => Target(v._1, v._2, true, true, true) }
         ) ^^ { case first ~ rest =>
-            Target(first._1, first._2, false, false) :: rest
+            Target(first._1, first._2, false, false, false) :: rest
         }
     
     // matches a function call e.g. "histo x, y"

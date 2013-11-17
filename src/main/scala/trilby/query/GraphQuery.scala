@@ -70,7 +70,9 @@ case class Target(/** The type name / wildcard, e.g. "ArrayList" */
                   /** Follow refs to this node; true if "->", false if "<-" */
                   to: Boolean, 
                   /** Skip instances of skippable classes */
-                  skip: Boolean)
+                  skip: Boolean,
+                  /** Traverse dominator tree */
+                  useDom: Boolean)
     
 /**
  * Implemented by classes that can receive a set of object IDs at

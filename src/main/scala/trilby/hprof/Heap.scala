@@ -39,6 +39,7 @@ import trilby.util.SmallCounts
 import trilby.nonheap.BitSet
 import trilby.graph.Dominators
 import trilby.graph.DominatorsOG
+import trilby.graph.CompactIntGraph
 
 class Heap(options: Options, val idSize: Int, val fileDate: Date) 
     extends SizeData with GCRootData with SkipSet {
@@ -71,6 +72,9 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
 
     /** After heap read, {@link #graphBuilder} builds this */
     private[this] var graph: ObjectGraph2 = null
+    
+    /** And this */
+    private[this] var domTree: CompactIntGraph = null
     
     /** Highest HID seen by addInstance or addClassDef */
     private[this] var highestHid = 0L
@@ -304,7 +308,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
                 time("Finding dominators") {
                     // val dom = new Dominators(graph.g)
                     val(n, dom) = DominatorsOG(graph.g, masterRoot, false)
-                    dom.free()
+                    domTree = dom
                     n
                 }
             } 
@@ -313,7 +317,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         // Correct count for master root references
         log.info("Read %d references, %d dead".format(graphBuilder.size - numRoots, graphBuilder.numDead))
         if (options.dominators) {
-            log.info("%.0f of %d objects are simply-dominated\n", 100d * nSimply / maxId, maxId)
+            log.info("%.0f%% of %d objects are simply-dominated\n".format(100d * nSimply / maxId, maxId))
         }
         
         graphBuilder.destroy()
@@ -329,6 +333,14 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
 
     def forEachReferee(oid: Int, fn: Int => Unit) = 
         graph.forEachReferee(oid, fn)
+
+    /*
+    def forEachDomReferrer(oid: Int, fn: Int => Unit) = 
+        graph.forEachReferrer(oid, fn)
+
+    def forEachDomReferee(oid: Int, fn: Int => Unit) = 
+        graph.forEachReferee(oid, fn)
+    */
 
     def maxId = _maxId()
     

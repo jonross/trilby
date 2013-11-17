@@ -71,7 +71,7 @@ run_trilby() {
 #
 
 run_offline_tests() {
-    $HOME/work/trilby-ls/testit
+    $HOME/work/trilby-ls/testit "$@"
 }
 
 # Generate test heaps
