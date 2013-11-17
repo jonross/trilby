@@ -40,7 +40,7 @@ import trilby.nonheap.BitSet
 import trilby.graph.Dominators
 import trilby.graph.DominatorsOG
 
-class Heap(val idSize: Int, val fileDate: Date) 
+class Heap(options: Options, val idSize: Int, val fileDate: Date) 
     extends SizeData with GCRootData with SkipSet {
     
     def heap = this
@@ -299,16 +299,23 @@ class Heap(val idSize: Int, val fileDate: Date)
             findLiveObjects()
         }
         
-        /*
-        time("Finding dominators") {
-            val dom = new Dominators(graph.g)
-            DominatorsOG(graph.g, isLive, gcRoots, false)
-            dom.free()
-        }
-        */
+        val nSimply = 
+            if (options.dominators) {
+                time("Finding dominators") {
+                    // val dom = new Dominators(graph.g)
+                    val(n, dom) = DominatorsOG(graph.g, masterRoot, false)
+                    dom.free()
+                    n
+                }
+            } 
+            else 0
         
         // Correct count for master root references
         log.info("Read %d references, %d dead".format(graphBuilder.size - numRoots, graphBuilder.numDead))
+        if (options.dominators) {
+            log.info("%.0f of %d objects are simply-dominated\n", 100d * nSimply / maxId, maxId)
+        }
+        
         graphBuilder.destroy()
         graphBuilder = null // allow GC
     }
@@ -324,6 +331,15 @@ class Heap(val idSize: Int, val fileDate: Date)
         graph.forEachReferee(oid, fn)
 
     def maxId = _maxId()
+    
+    def textDump() {
+        for (oid <- 1 to maxId if oid != masterRoot) {
+            val classDef = classes.getForObjectId(oid)
+            printf("#%d is a %s\n", oid, classDef.name)
+            forEachReferrer(oid, v => printf("  <- #%d\n", v))
+            forEachReferee(oid, v => printf("  -> #%d\n", v))
+        }
+    }
 }
 
 /**
@@ -378,7 +394,7 @@ trait GCRootData {
     private[this] var goodRoots = 0
     private[this] var badRoots = 0
     
-    private[this] var masterRoot = 0
+    var masterRoot = 0
     
     def addGCRoot(id: Long, desc: String) {
         tmpGCRoots.add(id)

@@ -57,7 +57,7 @@ class HProfReader (data: MappedHeapData) {
     val HEAP_DUMP_END = 0x2c
     val MAX_RECORD_TYPE = 0x2c
     
-    def read() = {
+    def read(options: Options) = {
         
         // File starts with a NUL-terminated version string.
 
@@ -80,7 +80,7 @@ class HProfReader (data: MappedHeapData) {
         // HPROF manual says this is two u4, not a u8.
 
         val now = data.readInt().asInstanceOf[Long] << 32 + data.readInt()
-        heap = new Heap(Ref.size, new Date(now))
+        heap = new Heap(options, Ref.size, new Date(now))
 
         def readit() = while (! data.eof) {
             data.demand(9)

@@ -6,6 +6,7 @@ import java.io.File
 import trilby.nonheap.NHUtils
 import trilby.query.CommandParser
 import trilby.reports.ClassHistogram
+import trilby.util.Oddments.Options
 
 object SampleHeap {
     
@@ -14,7 +15,7 @@ object SampleHeap {
         val file = new File("smallheap.hprof")
         assert(file.exists)
         val data = new MappedHeapData(file)
-        new HProfReader(data).read()
+        new HProfReader(data).read(new Options)
     }
     
     def query(s: String) =

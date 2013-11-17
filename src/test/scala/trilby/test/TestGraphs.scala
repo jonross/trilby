@@ -5,8 +5,6 @@ import trilby.graph.MutableIntGraph
 import trilby.graph.IntGraph
 import trilby.graph.CompactIntGraph
 import trilby.graph.Dominators
-import trilby.graph.Dominators
-import trilby.graph.Dominators
 import trilby.graph.DominatorsOG
 
 class TestGraphs extends FunSuite {
@@ -111,7 +109,6 @@ class TestGraphs extends FunSuite {
             var i = if (up) 1 else e.length - 1
             var cur = g.walkOutEdges(e(0))
             while (cur != 0) {
-            // for (long cur = g.walkOutEdges(e[0]); cur != 0; cur = g.nextOutEdge(cur)) {
                 assert(e(i) === (cur & 0xFFFFFFFFL).toInt)
                 i = if (up) i + 1 else i - 1
                 cur = g.nextOutEdge(cur)
@@ -129,7 +126,7 @@ class TestGraphs extends FunSuite {
         }
         d.free()
         
-        val domGraph = DominatorsOG.apply(g, 1, true)
+        val domGraph = DominatorsOG.apply(g, 1, true)._2
         for (v <- 1 until doms.length) {
             var cur = domGraph.walkInEdges(v)
             if (doms(v) == 0) {

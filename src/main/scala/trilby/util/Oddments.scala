@@ -31,8 +31,31 @@ import org.codehaus.jackson.JsonGenerator
 import scala.collection.mutable.ListBuffer
 import java.io.PrintWriter
 import trilby.nonheap.BitSet
+import org.apache.log4j.Level
+import java.io.File
 
 object Oddments {
+    
+    case class Options(val dominators: Boolean = true,
+                       val histogram: Boolean = false,
+                       val interactive: Boolean = true,
+                       val logLevel: Level = Level.WARN,
+                       val textDump: Boolean = false,
+                       // val web: Boolean = false,
+                       val heapFile: File = null) {
+        
+        def parse(options: List[String]): Options = options match {
+            case "--debug" :: _ => copy(logLevel = Level.DEBUG) parse options.tail
+            case "--histo" :: _ => copy(histogram = true, interactive = false) parse options.tail
+            case "--info" :: _ => copy(logLevel = Level.INFO) parse options.tail
+            case "--nodom" :: _ => copy(dominators = false) parse options.tail
+            case "--textdump" :: _ => copy(textDump = true, interactive = false) parse options.tail
+            // case "--web" :: _ => copy(web = true) parse options.tail
+            case x :: _ if x(0) == '-' => die("Unknown option: " + x)
+            case x :: Nil => copy(heapFile = new File(x))
+            case _ => die("Missing or extraneous heap filenames")
+        }
+    }
     
     trait Printable {
         def print(out: PrintWriter)

@@ -49,23 +49,6 @@ object Main {
     
     private var heap: Heap = null
     
-    case class Options(val histogram: Boolean = false,
-                       val interactive: Boolean = true,
-                       val logLevel: Level = Level.WARN,
-                       // val web: Boolean = false,
-                       val heapFile: File = null) {
-        
-        def parse(options: List[String]): Options = options match {
-            case "--debug" :: _ => copy(logLevel = Level.DEBUG) parse options.tail
-            case "--histo" :: _ => copy(histogram = true, interactive = false) parse options.tail
-            case "--info" :: _ => copy(logLevel = Level.INFO) parse options.tail
-            // case "--web" :: _ => copy(web = true) parse options.tail
-            case x :: _ if x(0) == '-' => die("Unknown option: " + x)
-            case x :: Nil => copy(heapFile = new File(x))
-            case _ => die("Missing or extraneous heap filenames")
-        }
-    }
-    
     def main(args: Array[String]) = protect {
         time("Session") {
             val options = Options().parse(args.toList)
@@ -79,7 +62,7 @@ object Main {
     def run(options: Options) {
 
         val data = new MappedHeapData(options.heapFile)
-        heap = new HProfReader(data).read()
+        heap = new HProfReader(data).read(options)
         
         if (options.interactive) {
             println("Entering interactive mode")
@@ -128,6 +111,10 @@ object Main {
             val pw = new PrintWriter(System.out)
             report.print(pw)
             pw.flush()
+        }
+        
+        else if (options.textDump) {
+            heap.textDump()
         }
         
         else {

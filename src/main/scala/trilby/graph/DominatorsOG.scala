@@ -38,19 +38,21 @@ object DominatorsOG {
         // efferent nodes that are themselves simply-dominated.
         
         val simply = new BitSet(g.maxNode + 1, true)
+        val reachable = new BitSet(g.maxNode +1, true)
         var nSimply = 0
         
         new PostorderDFS {
-            val maxNode = g.maxNode
-            val adder = (node: Int) => add(node)
+            def maxNode = g.maxNode
             def addChildren(node: Int) {
                 var cur = g.walkOutEdges(node)
                 while (cur != 0) {
-                    add((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+                    val child = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+                    add(child)
                     cur = g.nextOutEdge(cur)
                 }
             }
             def visit(node: Int) {
+                reachable.set(node)
                 var cur = g.walkInEdges(node)
                 if (cur == 0) {
                     // printf("%d is not simply-dominated because in-degree == 0\n", node)
@@ -87,7 +89,7 @@ object DominatorsOG {
         
         var hv = 2
         for (v <- 1 to g.maxNode) {
-            if (v != root && ! simply.get(v)) {
+            if (reachable.get(v) && ! simply.get(v) && v != root) {
                 // printf("map %d -> %d\n", v, hv)
                 g2h(v) = hv
                 h2g(hv) = v
@@ -134,7 +136,7 @@ object DominatorsOG {
             }
         }
         
-        new CompactIntGraph(g.maxNode, domEdges, onHeap)
+        (nSimply, new CompactIntGraph(g.maxNode, domEdges, onHeap))
     }
 
 }
