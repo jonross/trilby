@@ -334,13 +334,11 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     def forEachReferee(oid: Int, fn: Int => Unit) = 
         graph.forEachReferee(oid, fn)
 
-    /*
     def forEachDomReferrer(oid: Int, fn: Int => Unit) = 
-        graph.forEachReferrer(oid, fn)
+        domTree.forEachReferrer(oid, fn)
 
     def forEachDomReferee(oid: Int, fn: Int => Unit) = 
-        graph.forEachReferee(oid, fn)
-    */
+        domTree.forEachReferee(oid, fn)
 
     def maxId = _maxId()
     
@@ -350,6 +348,8 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
             printf("#%d is a %s\n", oid, classDef.name)
             forEachReferrer(oid, v => printf("  <- #%d\n", v))
             forEachReferee(oid, v => printf("  -> #%d\n", v))
+            forEachDomReferrer(oid, v => printf("  <= #%d\n", v))
+            forEachDomReferee(oid, v => printf("  => #%d\n", v))
         }
     }
 }

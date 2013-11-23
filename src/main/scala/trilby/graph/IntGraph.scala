@@ -63,6 +63,22 @@ trait IntGraph {
    
     def nextOutEdge(cursor: Long): Long
     
+    def forEachReferrer(oid: Int, fn: Int => Unit) {
+        var cur = walkInEdges(oid)
+        while (cur != 0) {
+            fn((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+            cur = nextInEdge(cur)
+        }
+    }
+    
+    def forEachReferee(oid: Int, fn: Int => Unit) {
+        var cur = walkOutEdges(oid)
+        while (cur != 0) {
+            fn((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+            cur = nextOutEdge(cur)
+        }
+    }
+    
     /**
      * Release off-heap memory.
      */

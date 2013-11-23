@@ -138,10 +138,16 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                     // We're not the end of the path so let the next finder
                     // handle the adjacent nodes.
                     if (next.target.to) {
-                        heap.forEachReferee(id, findNext)
+                        if (next.target.useDom)
+                            heap.forEachDomReferee(id, findNext)
+                        else
+                            heap.forEachReferee(id, findNext)
                     }
                     else {
-                        heap.forEachReferrer(id, findNext)
+                        if (next.target.useDom)
+                            heap.forEachDomReferrer(id, findNext)
+                        else
+                            heap.forEachReferrer(id, findNext)
                     }
                 }
                 else {
@@ -167,10 +173,18 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                 // Unfortunately for heaps with large such structures, the
                 // skipped set can get pretty big.  No easy way out, at this point.
                 if (skipped.put(id, pass) < pass) {
-                    if (target.to)
-                        heap.forEachReferee(id, push)
-                    else
-                        heap.forEachReferrer(id, push)
+                    if (target.to) {
+                        if (target.useDom)
+                            heap.forEachDomReferee(id, push)
+                        else
+                            heap.forEachReferee(id, push)
+                    }
+                    else {
+                        if (target.useDom)
+                            heap.forEachDomReferrer(id, push)
+                        else
+                            heap.forEachReferrer(id, push)
+                    }
                 }
             }
         }

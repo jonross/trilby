@@ -26,12 +26,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 public class GenHeap
 {
     private Map<Integer,Object> m1 = new MyHashMap<>();
     private Map<Integer,Object> m2 = new HashMap<>();
+    private MyDom myDom = new MyDom();
     
     private int passes;
 
@@ -103,4 +103,23 @@ class Thing2 {
         value = v;
     }
 }
+
+/**
+ * For testing dominator tree; 10% of the held Long boxes should be dominated by
+ * MyDom, not the map cells.  Make the values large enough to evade the autobox cache.
+ */
  
+class MyDom {
+    Map<Long,Long> m = new HashMap<>();
+    Long[] longs = new Long[100];
+    
+    {
+        for (int x = 0; x < 1000; x++) {
+            Long lx = (long) (x + 1000000);
+            m.put(lx, lx);
+            if (x < longs.length) {
+                longs[x] = lx;
+            }
+        }
+    }
+}
