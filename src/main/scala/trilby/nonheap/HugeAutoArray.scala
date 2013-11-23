@@ -47,39 +47,32 @@ object HugeAutoArray
         def onHeap: Boolean
         def unitSize: Int
         
-        private var buffers = new Array[ByteBuffer](1024)
+        protected var bufs = new Array[ByteBuffer](1024)
         protected[this] var _size = 0
         
         def size = _size
         
-        def free() = if (!onHeap) NHUtils.free(buffers)
+        def free() = if (!onHeap) NHUtils.free(bufs)
         
-        @inline 
-        def check(index: Int) = {
-            if (index >= _size)
-                throw new ArrayIndexOutOfBoundsException(index)
-            index
-        }
-                
         def buf(index: Int) = {
             if (index >= _size) 
                 _size = index + 1
             val slot = index / slotSize
-            if (slot >= buffers.length) {
-                var newSize = buffers.length
+            if (slot >= bufs.length) {
+                var newSize = bufs.length
                 while (newSize <= slot)
                     newSize = (newSize * 1.5).toInt
                 val newBuffers = new Array[ByteBuffer](newSize)
-                System.arraycopy(buffers, 0, newBuffers, 0, buffers.length)
-                buffers = newBuffers
+                System.arraycopy(bufs, 0, newBuffers, 0, bufs.length)
+                bufs = newBuffers
             }
-            var buffer = buffers(slot)
+            var buffer = bufs(slot)
             if (buffer != null) {
                 buffer
             }
             else {
-                buffers(slot) = NHUtils.alloc(unitSize * slotSize, onHeap)
-                buffers(slot)
+                bufs(slot) = NHUtils.alloc(unitSize * slotSize, onHeap)
+                bufs(slot)
             }
         }
     }
@@ -88,7 +81,7 @@ object HugeAutoArray
         
         val unitSize = 1
         def add(value: Byte) = set(_size, value)
-        def get(index: Int) = buf(check(index)).get(index % slotSize)
+        def get(index: Int) = bufs(index / slotSize).get(index % slotSize)
         def set(index: Int, value: Byte) = buf(index).put(index % slotSize, value)
         
     }
@@ -97,7 +90,7 @@ object HugeAutoArray
         
         val unitSize = 2
         def add(value: Short) = set(_size, value)
-        def get(index: Int) = buf(check(index)).getShort(2 * (index % slotSize))
+        def get(index: Int) = bufs(index / slotSize).getShort(2 * (index % slotSize))
         def set(index: Int, value: Short) = buf(index).putShort(2 * (index % slotSize), value)
         
     }
@@ -106,7 +99,9 @@ object HugeAutoArray
         
         val unitSize = 4
         def add(value: Int) = set(_size, value)
-        def get(index: Int) = buf(check(index)).getInt(4 * (index % slotSize))
+        @inline
+        def get(index: Int) = bufs(index / slotSize).getInt(4 * (index % slotSize))
+        def pget(index: Int) = buf(index).getInt(4 * (index % slotSize))
         def set(index: Int, value: Int) = buf(index).putInt(4 * (index % slotSize), value)
         
         def adjust(index: Int, delta: Int) = {
@@ -122,7 +117,8 @@ object HugeAutoArray
         
         val unitSize = 8
         def add(value: Long) = set(_size, value)
-        def get(index: Int) = buf(check(index)).getLong(8 * (index % slotSize))
+        @inline
+        def get(index: Int) = bufs(index / slotSize).getLong(8 * (index % slotSize))
         def set(index: Int, value: Long) = buf(index).putLong(8 * (index % slotSize), value)
         
     }

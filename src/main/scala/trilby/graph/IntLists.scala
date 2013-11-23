@@ -61,7 +61,7 @@ class IntLists(onHeap: Boolean) {
         chains.set(cons, value)
         chains.set(cons+1, 0)
         
-        if (listId >= firsts.size || firsts.get(listId) == 0) {
+        if (listId >= firsts.size || firsts.pget(listId) == 0) {
             firsts.set(listId, cons)
             lasts.set(listId, cons)
         }

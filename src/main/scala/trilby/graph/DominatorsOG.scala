@@ -22,7 +22,7 @@
 
 package trilby.graph
 
-import trilby.nonheap.BitSet
+import trilby.util.BitSet
 import trilby.util.Oddments._
 
 /**

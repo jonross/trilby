@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import trilby.nonheap.HugeAutoArray
-import trilby.nonheap.BitSet
+import trilby.util.BitSet
 
 class ClassInfo {
 

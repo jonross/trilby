@@ -30,8 +30,8 @@ import scala.util.Failure
 import trilby.nonheap.HugeAutoArray
 import trilby.util.Oddments._
 import scala.concurrent.duration.Duration
-import trilby.nonheap.BitSet
 import trilby.nonheap.HugeArray
+import trilby.util.BitSet
 
 /**
  * A more advanced implementation of {@link IntGraph} than

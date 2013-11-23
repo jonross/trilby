@@ -5,7 +5,7 @@ import org.scalatest.matchers.MustMatchers._
 
 import trilby.hprof.ClassInfo
 import trilby.hprof.Field
-import trilby.nonheap.BitSet
+import trilby.util.BitSet
     
 class TestDefs extends FunSuite {
     

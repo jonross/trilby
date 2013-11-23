@@ -3,7 +3,7 @@ package trilby.test
 import org.scalatest.FunSuite
 import trilby.util.SmallCounts
 import java.util.Random
-import trilby.nonheap.BitSet
+import trilby.util.BitSet
 
 class TestStructs extends FunSuite {
     

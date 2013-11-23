@@ -30,7 +30,6 @@ import java.io.StringWriter
 import org.codehaus.jackson.JsonGenerator
 import scala.collection.mutable.ListBuffer
 import java.io.PrintWriter
-import trilby.nonheap.BitSet
 import org.apache.log4j.Level
 import java.io.File
 

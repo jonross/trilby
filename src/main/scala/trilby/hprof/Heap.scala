@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import trilby.nonheap.HugeAutoArray
 import trilby.util.SmallCounts
-import trilby.nonheap.BitSet
+import trilby.util.BitSet
 import trilby.graph.Dominators
 import trilby.graph.DominatorsOG
 import trilby.graph.CompactIntGraph

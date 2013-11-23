@@ -20,29 +20,26 @@
  * SOFTWARE.
  */
 
-package trilby.nonheap
-
-/**
- * Bitset backed by an {@link ExpandoArray}.
- */
+package trilby.util
 
 class BitSet(size: Int)
 {
     private val SHIFT = 6 // 1 << SHIFT = 64 bits in a long
-    private val bits = new HugeArray.OfLong(1 + ((size - 1) / 64))
+    private val bits = new Array[Long](1 + ((size - 1) / 64))
     
-    def free() = bits.free()
-    
+    @inline
     def set(bit: Int) {
         val i = bit >> SHIFT;
         bits(i) =  bits(i) | (1L << bit)
     }
 
+    @inline
     def clear(bit: Int) {
         val i = bit >> SHIFT
         bits(i) = bits(i) & ~(1L << bit)
     }
 
+    @inline
     def get(bit: Int) = {
         val i = bit >> SHIFT
         (bits(i) & (1L << bit)) != 0L

@@ -22,8 +22,6 @@
 
 package trilby.util
 
-import trilby.nonheap.BitSet
-
 /**
  * A subset of the objects IDs in a heap.
  */
