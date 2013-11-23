@@ -26,7 +26,7 @@ class TestStructs extends FunSuite {
     
     test("BitSet") {
         val r = new Random()
-        val bits = new BitSet(NUM_IDS, false)
+        val bits = new BitSet(NUM_IDS)
         val values = new Array[Boolean](NUM_IDS)
         for (i <- 0 until NUM_IDS) {
             values(i) = r.nextInt() % 2 == 0

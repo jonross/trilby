@@ -11,7 +11,7 @@ class TestDefs extends FunSuite {
     
     test("matching classes") {
         val info = defs
-        val bits = new BitSet(10, true)
+        val bits = new BitSet(10)
         def verify(hids: Int*) {
             hids.foreach(hid => bits.get(hid) || fail("hid " + hid + " not set"))
             (1 to 7).toList.diff(hids).foreach(hid => bits.get(hid) && fail ("hid " + hid + " set"))

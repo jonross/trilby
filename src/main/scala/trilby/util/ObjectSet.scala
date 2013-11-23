@@ -30,7 +30,7 @@ import trilby.nonheap.BitSet
 
 class ObjectSet(val maxId: Int) {
     
-    private[this] val bits = new BitSet(maxId + 1, true) // TODO use off-heap
+    private[this] val bits = new BitSet(maxId + 1)
     
     def add(objectId: Int) = bits.set(objectId)
     

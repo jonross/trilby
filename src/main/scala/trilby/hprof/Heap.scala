@@ -450,7 +450,7 @@ trait GCRootData {
     }
     
     def findLiveObjects() {
-        liveObjects = new BitSet(heap.maxId + 1, true)
+        liveObjects = new BitSet(heap.maxId + 1)
         var reachable = 0
         new PreorderDFS {
             def maxNode = heap.maxId
@@ -498,6 +498,6 @@ trait SkipSet {
     
     def skipNone() {
         history = Nil
-        bits = new BitSet(heap.classes.numClasses, true)
+        bits = new BitSet(heap.classes.numClasses)
     }
 }

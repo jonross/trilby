@@ -51,8 +51,8 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         f((x, y) => {
             if (x <= 0 || y <= 0)
                 throw new IllegalArgumentException("invalid edge: " + x + "->" + y);
-            out.degrees.set(x, out.degrees.get(x) + 1)
-            in.degrees.set(y, in.degrees.get(y) + 1)
+            out.degrees(x) = out.degrees(x) + 1
+            in.degrees(y) = in.degrees(y) + 1
             numEdges += 1
         })
     }
@@ -78,32 +78,32 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         private[this] var edges: HugeArray.OfInt = null
         
         /** Temporary count of vertex degree */
-        var degrees = new HugeArray.OfInt(maxId + 1, false)
+        var degrees = new HugeArray.OfInt(maxId + 1)
         
         /** For a vertex V, the offset into edges where its list begins */
-        private[this] val offsets = new HugeArray.OfInt(maxId + 1, false)
+        private[this] val offsets = new HugeArray.OfInt(maxId + 1)
             
         def free() {
-            boundaries.free()
+            boundaries = null
             offsets.free()
             edges.free()
         }
         
         def fill(numEdges: Int) {
             
-            edges = new HugeArray.OfInt(numEdges + 1, false)
-            boundaries = new BitSet(numEdges + 1, false)
+            edges = new HugeArray.OfInt(numEdges + 1)
+            boundaries = new BitSet(numEdges + 1)
             log.info("Finding edge offsets")
             var nextOffset = 1
             
             var id = 1
             while (id <= maxId) {
-                val degree = degrees.get(id)
+                val degree = degrees(id)
                 if (degree == 0) {
-                    offsets.set(id, 0)
+                    offsets(id) = 0
                 }
                 else {
-                    offsets.set(id, nextOffset)
+                    offsets(id) = nextOffset
                     boundaries.set(nextOffset)
                     nextOffset += degree
                 }
@@ -116,10 +116,10 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
             f((x, y) => {
                 val from = if (out) x else y
                 val to = if (out) y else x
-                val offset = offsets.get(from)
-                val delta = degrees.get(from) - 1
-                degrees.set(from, delta)
-                edges.set(offset + delta, to)
+                val offset = offsets(from)
+                val delta = degrees(from) - 1
+                degrees(from) = delta
+                edges(offset + delta) = to
             })
             
             degrees.free()
@@ -127,13 +127,13 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         }
         
         def walk(v: Int) = {
-            val offset = offsets.get(v)
-            if (offset == 0) 0 else (offset.toLong << 32) | edges.get(offset)
+            val offset = offsets(v)
+            if (offset == 0) 0 else (offset.toLong << 32) | edges(offset)
         }
         
         def next(cursor: Long) = {
             val offset = 1 + (cursor >>> 32).toInt
-            if (boundaries.get(offset)) 0 else (offset.toLong << 32) | edges.get(offset)
+            if (boundaries.get(offset)) 0 else (offset.toLong << 32) | edges(offset)
         }
     }
     
@@ -162,7 +162,7 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         val counts = new Array[Int](11)
         val max = degrees.size - 1
         for (i <- 1 to max) {
-            val degree = degrees.get(i)
+            val degree = degrees(i)
             counts(if (degree <= 10) degree else 10) += 1
         }
         for (i <- 0 until counts.length)

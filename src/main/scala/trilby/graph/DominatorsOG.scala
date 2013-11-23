@@ -37,8 +37,8 @@ object DominatorsOG {
         // Find simply-dominated nodes; these are nodes with one afferent node and
         // efferent nodes that are themselves simply-dominated.
         
-        val simply = new BitSet(g.maxNode + 1, true)
-        val reachable = new BitSet(g.maxNode +1, true)
+        val simply = new BitSet(g.maxNode + 1)
+        val reachable = new BitSet(g.maxNode +1)
         var nSimply = 0
         
         new PostorderDFS {
