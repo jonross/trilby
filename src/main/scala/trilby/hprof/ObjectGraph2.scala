@@ -28,33 +28,6 @@ import org.slf4j.LoggerFactory
 import trilby.nonheap.HugeAutoArray
 
 /**
- */
-
-class ObjectGraph2(val heap: Heap, maxId: Int, val builder: ObjectGraphBuilder) {
-    
-    private[this] val log = LoggerFactory.getLogger(getClass)
-    
-    log.info("Building graph")
-    val g = new CompactIntGraph(maxId, builder.edges(_), true)
-    
-    def forEachReferrer(oid: Int, fn: Int => Unit) {
-        var cur = g.walkInEdges(oid)
-        while (cur != 0) {
-            fn((cur & 0xFFFFFFFFL).asInstanceOf[Int])
-            cur = g.nextInEdge(cur)
-        }
-    }
-    
-    def forEachReferee(oid: Int, fn: Int => Unit) {
-        var cur = g.walkOutEdges(oid)
-        while (cur != 0) {
-            fn((cur & 0xFFFFFFFFL).asInstanceOf[Int])
-            cur = g.nextOutEdge(cur)
-        }
-    }
-}
-
-/**
  * Accumulates raw information about object references and generates
  * {@link ObjectGraph}, above.
  */

@@ -71,7 +71,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     private[hprof] var graphBuilder = new ObjectGraphBuilder()
 
     /** After heap read, {@link #graphBuilder} builds this */
-    private[this] var graph: ObjectGraph2 = null
+    private[this] var graph: CompactIntGraph = null
     
     /** And this */
     private[this] var domTree: CompactIntGraph = null
@@ -296,7 +296,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         objectIdMap = null // allow GC
         
         time("Building object graph") {
-            graph = new ObjectGraph2(this, maxId, graphBuilder)
+            graph = new CompactIntGraph(maxId, graphBuilder.edges(_), true)
         }
         
         time("Find live objects") {
@@ -307,7 +307,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
             if (options.dominators) {
                 time("Finding dominators") {
                     // val dom = new Dominators(graph.g)
-                    val(n, dom) = DominatorsOG(graph.g, masterRoot, false)
+                    val(n, dom) = DominatorsOG(graph, masterRoot, false)
                     domTree = dom
                     n
                 }

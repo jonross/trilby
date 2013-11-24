@@ -23,6 +23,7 @@
 package trilby.graph
 
 import trilby.nonheap.HugeAutoArray
+import trilby.util.Oddments._
 
 /**
  * Manage a related group of linked lists of unboxed integers, on or off the heap.
@@ -128,15 +129,11 @@ class IntLists(onHeap: Boolean) {
      * @see #walk(int)
      */
     
-    def next(cursor: Long) = {
-        val cons = ((cursor >>> 32) & 0xFFFFFFFFL).toInt
-        _cursor(chains.get(cons + 1))
-    }
+    def next(cursor: IntCursor) = 
+        _cursor(chains.get(cursor.position + 1))
     
-    private def _cursor(cons: Int) = if (cons == 0) 0L else {
-        val value = chains.get(cons)
-        (cons.toLong << 32) | value
-    }
+    private def _cursor(cons: Int) = 
+        if (cons == 0) IntCursor(0, 0) else IntCursor(cons, chains.get(cons))
     
     private def _alloc() = {
         if (freelist != 0) {

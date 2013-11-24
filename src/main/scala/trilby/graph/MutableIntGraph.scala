@@ -22,6 +22,8 @@
 
 package trilby.graph
 
+import trilby.util.Oddments._
+
 /**
  * Simple, not very space-efficient implementation of {@link IntGraph} built on {@link IntLists}.
  */
@@ -50,11 +52,11 @@ class MutableIntGraph(onHeap: Boolean) extends IntGraph
     
     def maxNode = max
     
-    def walkInEdges(v: Int) = in.walk(v)
+    def walkInEdges(v: Int) = in.walk(v).self
     
-    def nextInEdge(cursor: Long) = in.next(cursor)
+    def nextInEdge(cursor: Long) = in.next(new IntCursor(cursor)).self
     
-    def walkOutEdges(v: Int) = out.walk(v)
+    def walkOutEdges(v: Int) = out.walk(v).self
     
-    def nextOutEdge(cursor: Long) = out.next(cursor)
+    def nextOutEdge(cursor: Long) = out.next(new IntCursor(cursor)).self
 }

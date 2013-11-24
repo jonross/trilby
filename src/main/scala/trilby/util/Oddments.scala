@@ -57,6 +57,17 @@ object Oddments {
             case _ => die("Missing or extraneous heap filenames")
         }
     }
+
+    class IntCursor(val self: Long) extends AnyVal {
+        @inline def valid = self != 0
+        @inline def value = (self & 0xFFFFFFFFL).asInstanceOf[Int]
+        @inline def position = ((self >>> 32) & 0xFFFFFFFFL).asInstanceOf[Int]
+    }
+    
+    object IntCursor {
+        def apply(position: Int, value: Int) = 
+            new IntCursor((position.toLong << 32) | value)
+    }
     
     trait Printable {
         def print(out: PrintWriter)

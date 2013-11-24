@@ -86,12 +86,12 @@ class Dominators(val g: IntGraph) {
             }
 
             // step 3
-            cur = buck.walk(p)
-            while (cur != 0) {
-                val v = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+            var bcur = buck.walk(p)
+            while (bcur.valid) {
+                val v = bcur.value
                 val u = eval(v)
                 idom.put(v, if (semi.get(u) < semi.get(v)) u else p)
-                cur = buck.next(cur)
+                bcur = buck.next(bcur)
             }
             buck.clear(p)
         }
