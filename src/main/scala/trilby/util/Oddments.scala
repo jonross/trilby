@@ -38,6 +38,7 @@ object Oddments {
     case class Options(val dominators: Boolean = true,
                        val histogram: Boolean = false,
                        val interactive: Boolean = true,
+                       val jline: Boolean = false,
                        val logLevel: Level = Level.WARN,
                        val textDump: Boolean = false,
                        // val web: Boolean = false,
@@ -47,6 +48,7 @@ object Oddments {
             case "--debug" :: _ => copy(logLevel = Level.DEBUG) parse options.tail
             case "--histo" :: _ => copy(histogram = true, interactive = false) parse options.tail
             case "--info" :: _ => copy(logLevel = Level.INFO) parse options.tail
+            case "--jline" :: _ => copy(jline = true) parse options.tail
             case "--nodom" :: _ => copy(dominators = false) parse options.tail
             case "--textdump" :: _ => copy(textDump = true, interactive = false) parse options.tail
             // case "--web" :: _ => copy(web = true) parse options.tail

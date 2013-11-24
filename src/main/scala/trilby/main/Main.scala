@@ -66,8 +66,7 @@ object Main {
         
         if (options.interactive) {
             println("Entering interactive mode")
-            val useJLine = java.lang.Boolean.getBoolean("trilby.use.jline")
-            val readLine = if (useJLine) {
+            val readLine = if (options.jline) {
                 val reader = new ConsoleReader()
                 () => reader.readLine("> ")
             } else {

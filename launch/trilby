@@ -18,8 +18,8 @@ export JAVA_OPTS=""
 verbose_gc=false
 gc_details=true
 need_gc=true
-use_jline=true
 run_what=trilby
+use_jline=--jline
 
 while true; do case "$1" in
     --genheap)
@@ -41,7 +41,7 @@ while true; do case "$1" in
         shift
         ;;
     --nojline)
-        use_jline=false
+        use_jline=
         shift
         ;;
     --offline)
@@ -64,7 +64,7 @@ esac; done
 #
 
 run_trilby() {
-    exec $PROJECT_DIR/target/start trilby.main.Main "$@"
+    exec $PROJECT_DIR/target/start trilby.main.Main $use_jline "$@"
 }
 
 # Run tests against offline / non-public heaps
