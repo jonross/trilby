@@ -128,12 +128,12 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         
         def walk(v: Int) = {
             val offset = offsets(v)
-            if (offset == 0) 0 else (offset.toLong << 32) | edges(offset)
+            if (offset == 0) IntCursor(0, 0) else IntCursor(offset, edges(offset))
         }
         
-        def next(cursor: Long) = {
-            val offset = 1 + (cursor >>> 32).toInt
-            if (boundaries.get(offset)) 0 else (offset.toLong << 32) | edges(offset)
+        def next(cursor: IntCursor) = {
+            val offset = 1 + cursor.position
+            if (boundaries.get(offset)) IntCursor(0, 0) else IntCursor(offset, edges(offset))
         }
     }
     
@@ -147,7 +147,7 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
     
     /** @see IntGraph#nextInEdge */
     
-    def nextInEdge(cursor: Long) = in.next(cursor)
+    def nextInEdge(cursor: IntCursor) = in.next(cursor)
 
     /** @see IntGraph#walkOutEdges */
     
@@ -155,7 +155,7 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
 
     /** @see IntGraph#nextOutEdge */
     
-    def nextOutEdge(cursor: Long) = out.next(cursor)
+    def nextOutEdge(cursor: IntCursor) = out.next(cursor)
     
     private def logStats(inOut: String, degrees: HugeArray.OfInt) {
         log.info("Frequency of " + inOut + "-degree across " + maxId + " nodes");

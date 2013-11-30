@@ -45,8 +45,8 @@ object DominatorsOG {
             def maxNode = g.maxNode
             def addChildren(node: Int) {
                 var cur = g.walkOutEdges(node)
-                while (cur != 0) {
-                    val child = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+                while (cur.valid) {
+                    val child = cur.value
                     add(child)
                     cur = g.nextOutEdge(cur)
                 }
@@ -63,8 +63,8 @@ object DominatorsOG {
                     return
                 }
                 cur = g.walkOutEdges(node)
-                while (cur != 0) {
-                    val child = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+                while (cur.valid) {
+                    val child = cur.value
                     if (!simply.get(child)) {
                         // printf("%d is not simply-dominated because %d is not\n", node, child)
                         return
@@ -104,8 +104,8 @@ object DominatorsOG {
                 val hv = g2h(v)
                 if (hv > 0) {
                     var cur = g.walkOutEdges(v)
-                    while (cur != 0) {
-                        val w = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
+                    while (cur.valid) {
+                        val w = cur.value
                         val hw = g2h(w)
                         if (hw > 0) {
                             // printf("ref %d(%d) -> %d(%d)\n", hv, v, hw, w)
@@ -130,7 +130,7 @@ object DominatorsOG {
             }
             for (v <- 1 to g.maxNode) {
                 if (simply.get(v)) {
-                    val w = (g.walkInEdges(v) & 0xFFFFFFFFL).asInstanceOf[Int]
+                    val w = g.walkInEdges(v).value
                     fn(w, v)
                 }
             }

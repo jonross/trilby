@@ -108,8 +108,8 @@ class TestGraphs extends FunSuite {
         for (e <- edges) {
             var i = if (up) 1 else e.length - 1
             var cur = g.walkOutEdges(e(0))
-            while (cur != 0) {
-                assert(e(i) === (cur & 0xFFFFFFFFL).toInt)
+            while (cur.valid) {
+                assert(e(i) === cur.value)
                 i = if (up) i + 1 else i - 1
                 cur = g.nextOutEdge(cur)
             }
@@ -130,11 +130,11 @@ class TestGraphs extends FunSuite {
         for (v <- 1 until doms.length) {
             var cur = domGraph.walkInEdges(v)
             if (doms(v) == 0) {
-                assert(cur == 0)
+                assert(!cur.valid)
             }
             else {
-                val w = (cur & 0xFFFFFFFFL).asInstanceOf[Int]
-                assert(domGraph.nextInEdge(cur) == 0)
+                val w = cur.value
+                assert(!domGraph.nextInEdge(cur).valid)
                 assert(w == doms(v))
             }
         }

@@ -52,11 +52,11 @@ class MutableIntGraph(onHeap: Boolean) extends IntGraph
     
     def maxNode = max
     
-    def walkInEdges(v: Int) = in.walk(v).self
+    def walkInEdges(v: Int) = in.walk(v)
     
-    def nextInEdge(cursor: Long) = in.next(new IntCursor(cursor)).self
+    def nextInEdge(cursor: IntCursor) = in.next(cursor)
     
-    def walkOutEdges(v: Int) = out.walk(v).self
+    def walkOutEdges(v: Int) = out.walk(v)
     
-    def nextOutEdge(cursor: Long) = out.next(new IntCursor(cursor)).self
+    def nextOutEdge(cursor: IntCursor) = out.next(cursor)
 }

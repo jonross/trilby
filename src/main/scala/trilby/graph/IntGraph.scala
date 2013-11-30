@@ -22,6 +22,8 @@
 
 package trilby.graph
 
+import trilby.util.Oddments._
+
 /**
  * Graph API with integer-tagged nodes, minimal heap consumption (optionally off-heap),
  * and no object allocation for iteration of edges.
@@ -31,50 +33,34 @@ trait IntGraph {
 
     def maxNode: Int
     
-    /**
-     * Traverse in-edges for vertex v, without boxing.  Usage:
-     * <pre>
-     * for (long cur = g.walkInEdges(start); cur != 0; cur = g.nextInEdge(cur)) {
-     *     int v = (int) (cur & 0xFFFFFFFF);
-     *     ...
-     * }
-     * </pre>
-     */
+    /** Traverse in-edges for vertex v, without boxing. */
     
-    def walkInEdges(v: Int): Long
+    def walkInEdges(v: Int): IntCursor
     
     /** @see #walkInEdges */
    
-    def nextInEdge(cursor: Long): Long
+    def nextInEdge(cursor: IntCursor): IntCursor
     
-    /**
-     * Traverse out-edges for vertex v, without boxing.  Usage:
-     * <pre>
-     * for (long cur = g.walkOutEdges(start); cur != 0; cur = g.nextOutEdge(cur)) {
-     *     int v = (int) (cur & 0xFFFFFFFF);
-     *     ...
-     * }
-     * </pre>
-     */
+    /** Traverse out-edges for vertex v, without boxing. */
     
-    def walkOutEdges(v: Int): Long
+    def walkOutEdges(v: Int): IntCursor
     
     /** @see #walkOutEdges */
    
-    def nextOutEdge(cursor: Long): Long
+    def nextOutEdge(cursor: IntCursor): IntCursor
     
     def forEachReferrer(oid: Int, fn: Int => Unit) {
         var cur = walkInEdges(oid)
-        while (cur != 0) {
-            fn((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+        while (cur.valid) {
+            fn(cur.value)
             cur = nextInEdge(cur)
         }
     }
     
     def forEachReferee(oid: Int, fn: Int => Unit) {
         var cur = walkOutEdges(oid)
-        while (cur != 0) {
-            fn((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+        while (cur.valid) {
+            fn(cur.value)
             cur = nextOutEdge(cur)
         }
     }

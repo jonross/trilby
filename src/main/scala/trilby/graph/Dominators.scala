@@ -74,8 +74,8 @@ class Dominators(val g: IntGraph) {
 
             // step 2
             var cur = g.walkInEdges(rev.get(w))
-            while (cur != 0) {
-                val v = ord.get((cur & 0xFFFFFFFFL).asInstanceOf[Int])
+            while (cur.valid) {
+                val v = ord.get(cur.value)
                 val u = eval(v)
                 val semi_u = semi.get(u)
                 if (semi.get(w) > semi_u)
@@ -128,8 +128,8 @@ class Dominators(val g: IntGraph) {
             rev.put(v, _v)
             parent.put(v, ord.get(_p))
             var cur = g.walkOutEdges(_v)
-            while (cur != 0) {
-                dfs((cur & 0xFFFFFFFFL).asInstanceOf[Int], _v)
+            while (cur.valid) {
+                dfs(cur.value, _v)
                 cur = g.nextOutEdge(cur)
             }
         }
