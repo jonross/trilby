@@ -54,11 +54,11 @@ object DominatorsOG {
             def visit(node: Int) {
                 reachable.set(node)
                 var cur = g.walkInEdges(node)
-                if (cur == 0) {
+                if (! cur.valid) {
                     // printf("%d is not simply-dominated because in-degree == 0\n", node)
                     return
                 }
-                if (g.nextInEdge(cur) != 0) {
+                if (g.nextInEdge(cur).valid) {
                     // printf("%d is not simply-dominated because in-degree > 1\n", node)
                     return
                 }

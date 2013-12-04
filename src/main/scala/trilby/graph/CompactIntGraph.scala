@@ -42,6 +42,7 @@ import trilby.util.BitSet
 class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boolean) extends IntGraph
 {
     private[this] val log = LoggerFactory.getLogger(getClass)
+    private[this] val stop = IntCursor(0, 0)
     
     private[this] val in = new Edges(false)
     private[this] val out = new Edges(true)
@@ -128,12 +129,12 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         
         def walk(v: Int) = {
             val offset = offsets(v)
-            if (offset == 0) IntCursor(0, 0) else IntCursor(offset, edges(offset))
+            if (offset == 0) stop else IntCursor(offset, edges(offset))
         }
         
         def next(cursor: IntCursor) = {
             val offset = 1 + cursor.position
-            if (boundaries.get(offset)) IntCursor(0, 0) else IntCursor(offset, edges(offset))
+            if (boundaries.get(offset)) stop else IntCursor(offset, edges(offset))
         }
     }
     

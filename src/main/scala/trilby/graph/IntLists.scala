@@ -37,6 +37,8 @@ class IntLists(onHeap: Boolean) {
     private[this] val chains = new HugeAutoArray.OfInt(onHeap)
     private[this] var freelist = 0
     
+    private[this] val stop = IntCursor(0, 0)
+    
     // 0 means nil so the first cons is not used
     chains.add(0)
     chains.add(0)
@@ -133,7 +135,7 @@ class IntLists(onHeap: Boolean) {
         _cursor(chains.get(cursor.position + 1))
     
     private def _cursor(cons: Int) = 
-        if (cons == 0) IntCursor(0, 0) else IntCursor(cons, chains.get(cons))
+        if (cons == 0) stop else IntCursor(cons, chains.get(cons))
     
     private def _alloc() = {
         if (freelist != 0) {
