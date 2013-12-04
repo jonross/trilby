@@ -99,10 +99,3 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     }
 
 }
-
-class FullHistogram(heap: Heap) extends ClassHistogram(heap, false) {
-    heap forEachInstance (id => {
-        val classDef = heap.classes.getForObjectId(id)
-        add(id, classDef, heap.getObjectSize(id))
-    })
-}

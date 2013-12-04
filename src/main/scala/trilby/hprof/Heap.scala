@@ -275,7 +275,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         skipNone()
         
         staticRefs.free()
-        staticRefs = null // allow GC
+        staticRefs = null
         
         createMasterRoot(fabricateHeapId(), fabricateOffset())
         
@@ -293,7 +293,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         
         val m = maxId
         _maxId = () => m
-        objectIdMap = null // allow GC
+        objectIdMap = null
         
         time("Building object graph") {
             graph = new CompactIntGraph(maxId, graphBuilder.edges(_), true)
@@ -321,7 +321,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         }
         
         graphBuilder.free()
-        graphBuilder = null // allow GC
+        graphBuilder = null
     }
     
     def forEachInstance(fn: Int => Unit) =
@@ -381,7 +381,7 @@ trait SizeData {
             finalSizes.adjust(oid, initialSizes.get(oid))
         
         initialSizes.free()
-        initialSizes = null // allow GC
+        initialSizes = null
         
     }
 }

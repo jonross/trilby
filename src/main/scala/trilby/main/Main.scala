@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.Request
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import com.google.common.io.ByteStreams
-import trilby.reports.FullHistogram
 import trilby.nonheap.NHUtils
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
@@ -102,10 +101,10 @@ object Main {
         
         else if (options.histogram) {
             val report = new ClassHistogram(heap, false)
-            heap forEachInstance (id => {
+            for (id <- 1 to heap.maxId) {
                 val classDef = heap.classes.getForObjectId(id)
                 report.add(id, classDef, heap.getObjectSize(id))
-            })
+            }
             val pw = new PrintWriter(System.out)
             report.print(pw)
             pw.flush()

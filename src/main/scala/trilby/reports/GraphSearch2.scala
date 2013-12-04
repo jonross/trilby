@@ -62,7 +62,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
     
     def run() = { 
         var count = 0
-        heap forEachInstance { id => {
+        for (id <- 1 to heap.maxId) {
             val classDef = heap.classes.getForObjectId(id)
             if (! heap.shouldSkip(classDef)) {
                 count += 1
@@ -71,7 +71,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                 }
                 finder.check(id)
             }
-        } }
+        } 
         query.acceptor
     }
     
