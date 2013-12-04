@@ -27,10 +27,10 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
 import trilby.hprof.Heap
 import trilby.query.QueryFunction
-import trilby.util.ObjectSet
 import trilby.util.Oddments.Printable
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
+import trilby.util.BitSet
 
 /**
  * Given any {@link ObjectSet}, report on the # of instances of each class and
@@ -41,36 +41,35 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     extends QueryFunction with Printable
 {
     class Counts(val classDef: ClassDef, var count: Int = 0, var nbytes: Long = 0L) { }
-    val counts = new TIntObjectHashMap[Counts]
+    val counts = new Array[Counts](heap.classes.numClasses + 1)
 
     def map[T](fn: Counts => T) =
-        for (c <- counts.valueCollection) yield fn(c)
+        for (c <- counts if c != null) yield fn(c)
     
     // Which object IDs are in the histogram
-    private[this] val knownIds = new ObjectSet(heap.maxId)
+    private[this] val knownIds = new BitSet(heap.maxId + 1)
     private[this] val log = LoggerFactory.getLogger(getClass)
     
     type T = ClassHistogram
         
     def add(id: Int, classDef: ClassDef, info: Long) {
-        var slot = counts.get(classDef.classId)
+        var slot = counts(classDef.classId)
         if (slot == null) {
             slot = new Counts(classDef)
-            counts.put(classDef.classId, slot)
+            counts(classDef.classId) = slot
         }
         slot.count += 1
         slot.nbytes += info
     }
     
-    def accept(ids: Array[Int]) = if (!(knownIds contains ids(1))) {
+    def accept(ids: Array[Int]) = if (!(knownIds.get(ids(1)))) {
         add(ids(1), heap.classes.getForObjectId(ids(0)), heap.getObjectSize(ids(1)))
-        knownIds.add(ids(1))
+        knownIds.set(ids(1))
     }
         
     def print(out: PrintWriter) {
         
-        val values = counts.values(new Array[Counts](0))
-        val slots = values.toList sortWith { (a,b) =>
+        val slots = counts.toList filter {_ != null} sortWith { (a,b) =>
             val delta = a.nbytes - b.nbytes
             if (delta > 0) true
             else if (delta < 0) false

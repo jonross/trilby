@@ -32,7 +32,7 @@ import com.google.common.primitives.Ints
 
 class IntStack
 {
-    private[this] var data = new Array[Int](100)
+    private[this] var data = new Array[Int](1000)
     private[this] var _size = 0
     
     def isEmpty = size == 0

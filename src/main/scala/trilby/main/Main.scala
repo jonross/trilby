@@ -27,7 +27,6 @@ import org.apache.log4j.BasicConfigurator
 import trilby.hprof.Heap
 import trilby.hprof.HProfReader
 import trilby.reports.ClassHistogram
-import trilby.util.ObjectSet
 import trilby.query.CommandParser
 import trilby.util.MappedHeapData
 import trilby.util.Oddments._

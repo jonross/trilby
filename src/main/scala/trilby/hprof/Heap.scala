@@ -320,7 +320,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
             log.info("%.0f%% of %d objects are simply-dominated\n".format(100d * nSimply / maxId, maxId))
         }
         
-        graphBuilder.destroy()
+        graphBuilder.free()
         graphBuilder = null // allow GC
     }
     

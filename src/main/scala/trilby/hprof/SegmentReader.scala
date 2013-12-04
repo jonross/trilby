@@ -293,7 +293,9 @@ sealed class ReferenceBag
     
     def size = from.size
     
-    def destroy() {
+    // release off-heap memory
+    
+    def free() {
         from.free()
         to.free()
     }
@@ -327,7 +329,7 @@ object ReferenceBag
             f
         } foreach { x => }
         
-        bags.foreach(_.destroy)
+        bags.foreach(_.free)
         (from, to)
     }
 }

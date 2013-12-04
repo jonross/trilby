@@ -76,9 +76,9 @@ class ObjectGraphBuilder {
         _numDead = dead.sum
     }
     
-    /** Clean up for GC */
+    /** Release off-heap memory */
     
-    def destroy() {
+    def free() {
         refsFrom.free()
         refsToLo4.free()
         refsToHi1.free()
