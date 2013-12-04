@@ -24,8 +24,8 @@ package trilby.graph
 
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
-
 import trilby.nonheap.NHUtils
+import trilby.nonheap.HugeArray
 
 /**
  * Off-heap implementation of Lengauer-Tarjan for dominators in an {@link IntGraph}.
@@ -106,7 +106,7 @@ class Dominators(val g: IntGraph) {
     }
 
     def get() = {
-        val d = new Array[Integer](max + 1)
+        val d = new HugeArray.OfInt(max + 1)
         d(0) = 0
         d(1) = 0
         for (i <- 2 to max) {

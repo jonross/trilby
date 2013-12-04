@@ -24,6 +24,7 @@ package trilby.graph
 
 import trilby.util.BitSet
 import trilby.util.Oddments._
+import trilby.nonheap.HugeArray
 
 /**
  * Dominators finder tailored for object graphs; assumes most object graph nodes
@@ -81,8 +82,8 @@ object DominatorsOG {
         // Create mapping from non-simply-dominated in g to h, and back.
         // The master root in g is node 1 in h.
         
-        val g2h = new Array[Int](g.maxNode + 1)
-        val h2g = new Array[Int](g.maxNode + 1 - nSimply)
+        val g2h = new HugeArray.OfInt(g.maxNode + 1)
+        val h2g = new HugeArray.OfInt(g.maxNode + 1 - nSimply)
         
         g2h(root) = 1
         h2g(1) = root
@@ -136,7 +137,11 @@ object DominatorsOG {
             }
         }
         
-        (nSimply, new CompactIntGraph(g.maxNode, domEdges, onHeap))
+        val result = new CompactIntGraph(g.maxNode, domEdges, onHeap)
+        doms.free()
+        h2g.free()
+        g2h.free()
+        (nSimply, result)
     }
 
 }
