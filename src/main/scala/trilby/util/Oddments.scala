@@ -144,7 +144,7 @@ object Oddments {
         protected val stack = new IntStack()
         private val seen = new BitSet(maxNode + 1)
         def add(node: Int) {
-            if (! seen.get(node)) {
+            if (! seen(node)) {
                 stack.push(node)
                 seen.set(node)
             }

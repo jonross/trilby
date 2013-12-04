@@ -65,7 +65,7 @@ object DominatorsOG {
                 cur = g.walkOutEdges(node)
                 while (cur.valid) {
                     val child = cur.value
-                    if (!simply.get(child)) {
+                    if (!simply(child)) {
                         // printf("%d is not simply-dominated because %d is not\n", node, child)
                         return
                     }
@@ -89,7 +89,7 @@ object DominatorsOG {
         
         var hv = 2
         for (v <- 1 to g.maxNode) {
-            if (reachable.get(v) && ! simply.get(v) && v != root) {
+            if (reachable(v) && ! simply(v) && v != root) {
                 // printf("map %d -> %d\n", v, hv)
                 g2h(v) = hv
                 h2g(hv) = v
@@ -129,7 +129,7 @@ object DominatorsOG {
                 fn(h2g(doms(v)), h2g(v))
             }
             for (v <- 1 to g.maxNode) {
-                if (simply.get(v)) {
+                if (simply(v)) {
                     val w = g.walkInEdges(v).value
                     fn(w, v)
                 }

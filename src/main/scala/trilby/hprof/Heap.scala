@@ -467,7 +467,7 @@ trait GCRootData {
     }
     
     def canUse(oid: Int) =
-        oid != masterRoot && (! heap.hideGarbage || liveObjects.get(oid))
+        oid != masterRoot && (! heap.hideGarbage || liveObjects(oid))
 }
 
 trait SkipSet {
@@ -482,7 +482,7 @@ trait SkipSet {
     }
     
     def shouldSkip(c: ClassDef) =
-        bits.get(c.classId)
+        bits(c.classId)
     
     def skipClasses(what: String, skip: Boolean) = (what, skip) match {
         case ("none", _) =>

@@ -134,7 +134,7 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         
         def next(cursor: IntCursor) = {
             val offset = 1 + cursor.position
-            if (boundaries.get(offset)) stop else IntCursor(offset, edges(offset))
+            if (boundaries(offset)) stop else IntCursor(offset, edges(offset))
         }
     }
     

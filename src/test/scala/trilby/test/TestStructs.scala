@@ -35,7 +35,7 @@ class TestStructs extends FunSuite {
                 bits.clear(i)
         }
         for (i <- 0 until NUM_IDS) {
-            assert(values(i) === bits.get(i))
+            assert(values(i) === bits(i))
         }
     }
 }

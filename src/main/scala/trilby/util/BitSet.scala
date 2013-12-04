@@ -40,7 +40,7 @@ class BitSet(size: Int)
     }
 
     @inline
-    def get(bit: Int) = {
+    def apply(bit: Int) = {
         val i = bit >> SHIFT
         (bits(i) & (1L << bit)) != 0L
     }
