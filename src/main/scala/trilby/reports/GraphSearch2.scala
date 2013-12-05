@@ -29,6 +29,7 @@ import trilby.query.GraphQuery
 import trilby.query.Target
 import trilby.util.IntStack
 import org.slf4j.LoggerFactory
+import trilby.nonheap.HugeArray
 
 /**
  * Actual graph search code.  I would love for this to be more idiomatic + replace the
@@ -47,6 +48,12 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
     // Object IDs to be passed to the collection function
     private[this] val funArgs = new Array[Int](query.argIndices.size)
     
+    // How many path starts examined
+    var count = 0
+    
+    // Track skipped objects
+    val skipped = new HugeArray.OfInt(heap.maxId + 1)
+        
     private[this] val log = LoggerFactory.getLogger(getClass)
     
     /**
@@ -61,17 +68,14 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                         buildFinders(targets.tail, index + 1, true))
     
     def run() = { 
-        var count = 0
         for (id <- 1 to heap.maxId) {
             val classDef = heap.classes.getForObjectId(id)
             if (! heap.shouldSkip(classDef)) {
                 count += 1
-                if (count % 10000 == 0) {
-                    // printf("Checked %d\n", count)
-                }
                 finder.check(id)
             }
         } 
+        skipped.free()
         query.acceptor
     }
     
@@ -82,12 +86,6 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         
         // Class IDs of the base class and all subclasses
         val matchingClasses = new TIntByteHashMap()
-        
-        // What object IDs have been skipped, by this finder, at this pass
-        val skipped = new TIntIntHashMap
-        
-        // What pass through this step is this
-        var pass = 0
         
         // Object IDs to be considered
         val stack = new IntStack
@@ -122,7 +120,6 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         
         def check(id: Int) {
             if (heap.canUse(id)) {
-                pass += 1
                 doCheck(id)
                 while (!stack.isEmpty)
                     doCheck(stack.pop())
@@ -172,7 +169,9 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                 // will ignore all paths from all x to y after the first one.
                 // Unfortunately for heaps with large such structures, the
                 // skipped set can get pretty big.  No easy way out, at this point.
-                if (skipped.put(id, pass) < pass) {
+                val at = skipped(id)
+                skipped(id) = count
+                if (at < count) {
                     if (target.to) {
                         if (target.useDom)
                             heap.forEachDomReferee(id, push)

@@ -78,7 +78,6 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
             _.nbytes >= 0 // was 1024; put back?
         }
         
-        out.write("%d counts %d slots\n".format(counts.size, slots.size))
         var totalCount = 0
         var totalBytes = 0L
         
