@@ -85,7 +85,10 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         val baseClass = heap.classes getByName target.types
         
         // Class IDs of the base class and all subclasses
-        val matchingClasses = new TIntByteHashMap()
+        val matching = new Array[Boolean](heap.classes.numClasses + 1)
+        
+        // How many matched
+        var matched = 0
         
         // Object IDs to be considered
         val stack = new IntStack
@@ -101,17 +104,21 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         val isWild = target.types endsWith ".*"
         val typePrefix = target.types.substring(0, target.types.length - 1)
         
-        if (baseClass != null)
-            matchingClasses.put(baseClass.classId, 1)
+        if (baseClass != null) {
+            matching(baseClass.classId) = true
+            matched += 1
+        }
         
-        for (classDef <- heap.classes getAll)
-            if (baseClass != null && (classDef hasSuper baseClass))
-                matchingClasses.put(classDef.classId, 1)
-            else if (isWild && classDef.name.startsWith(typePrefix))
-                matchingClasses.put(classDef.classId, 1)
+        for (classDef <- heap.classes getAll) {
+            if ((baseClass != null && (classDef hasSuper baseClass)) ||
+                (isWild && classDef.name.startsWith(typePrefix)))
+            {
+                matching(classDef.classId) = true
+                matched += 1
+            }
+        }
                 
-        
-        println(target.types + " matches " + matchingClasses.size + " classes")
+        println(target.types + " matches " + matched + " classes")
         
         /**
          * Check an object ID for a match against the matching classes, plus
@@ -129,7 +136,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         private def doCheck(id: Int) = {
             focus(index) = id
             val classDef = heap.classes getForObjectId id
-            if (matchingClasses contains classDef.classId) {
+            if (matching(classDef.classId)) {
                 // printf("Match[%d] %d a %s\n", index, id, classDef.name)
                 if (next != null) {
                     // We're not the end of the path so let the next finder
