@@ -26,6 +26,7 @@ import java.nio.ByteBuffer
 import java.nio.IntBuffer
 import trilby.nonheap.NHUtils
 import trilby.nonheap.HugeArray
+import trilby.util.Oddments._
 
 /**
  * Off-heap implementation of Lengauer-Tarjan for dominators in an {@link IntGraph}.
@@ -37,6 +38,7 @@ class Dominators(val g: IntGraph) {
 
     var buffers: List[ByteBuffer] = Nil
     var num = 1
+    val PAR = 64
     
     private[this] def getInts(size: Int) = {
         val buf = NHUtils.alloc(size * 4, false)
@@ -61,12 +63,16 @@ class Dominators(val g: IntGraph) {
         buck.add(max, 0)
         buck.clear(max)
 
-        dfs(1, 0)
-        for (v <- 1 to max) {
-            semi.put(v, v)
-            idom.put(v, 0)
-            ancestor.put(v, 0);
-            best.put(v, v)
+        // dfs(1, 0)
+        dfs()
+        
+        for (offset <- 1 to PAR par) {
+            for (v <- offset to max by PAR) {
+                semi.put(v, v)
+                idom.put(v, 0)
+                ancestor.put(v, 0);
+                best.put(v, v)
+            }
         }
 
         for (w <- max until 1 by -1) {
@@ -109,8 +115,10 @@ class Dominators(val g: IntGraph) {
         val d = new HugeArray.OfInt(max + 1)
         d(0) = 0
         d(1) = 0
-        for (i <- 2 to max) {
-            d(i) = rev.get(idom.get(ord.get(i)))
+        for (offset <- 1 to PAR par) {
+            for (i <- (offset+1) to max by PAR) {
+                d(i) = rev.get(idom.get(ord.get(i)))
+            }
         }
         d
     }
@@ -120,8 +128,39 @@ class Dominators(val g: IntGraph) {
         buck.free()
     }
     
+    // For reasons TBD, this DFS creates a subtle difference in the resulting tree for
+    // large graphs.  The DFS walks the child list in reverse order because of the way
+    // CompactIntGraph edges are filled.  It should not matter to the results, but does.
+    // To investigate.
+    
+    private def dfs() {
+        new PreorderDFS {
+            def maxNode = max
+            def visit(_v: Int) {
+                // get at parent by pushing it ahead of target node
+                val _p = stack.pop()
+                val v = num
+                num += 1
+                ord.put(_v, v)
+                rev.put(v, _v)
+                parent.put(v, ord.get(_p))
+            }
+            def addChildren(_v: Int) {
+                var cur = g.walkOutEdges(_v)
+                while (cur.valid) {
+                    add(_v, cur.value)
+                    cur = g.nextOutEdge(cur)
+                }
+            }
+            stack.push(0)
+            add(1)
+        }.run()
+    }
+    
+    /* prior, blows up the stack
     private def dfs(_v: Int, _p: Int) {
         if (ord.get(_v) == 0) {
+            printf("visit %d parent %d\n", _v, _p)
             val v = num
             num += 1
             ord.put(_v, v)
@@ -134,6 +173,7 @@ class Dominators(val g: IntGraph) {
             }
         }
     }
+    */
 
     private[this] def link(v: Int, w: Int) {
         ancestor.put(w, v)

@@ -462,7 +462,7 @@ trait GCRootData {
         var reachable = 0
         new PreorderDFS {
             def maxNode = heap.maxId
-            val adder = (node: Int) => add(node)
+            val adder = (node: Int) => { add(node); () }
             def addChildren(node: Int) = heap.forEachReferee(node, adder)
             def visit(node: Int) {
                 reachable += 1

@@ -143,10 +143,18 @@ object Oddments {
         def addChildren(node: Int): Unit
         protected val stack = new IntStack()
         private val seen = new BitSet(maxNode + 1)
-        def add(node: Int) {
-            if (! seen(node)) {
+        def add(node: Int) =
+            if (seen(node)) false else {
                 stack.push(node)
                 seen.set(node)
+                true
+            }
+        def add(extra: Int, node: Int) = {
+            if (seen(node)) false else {
+                stack.push(extra)
+                stack.push(node)
+                seen.set(node)
+                true
             }
         }
     }
