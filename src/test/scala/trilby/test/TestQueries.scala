@@ -27,7 +27,7 @@ class TestQueries extends FunSuite {
     test("Histogram sanity check") {
         val hist = histo("histo x, x of Object x")
         for (spec <- List(("String", BASE_COUNT, 24),
-                          ("Integer", 4 * BASE_COUNT, 12),
+                          ("Integer", 4 * BASE_COUNT, 16),
                           ("Object[]", BASE_COUNT / 1000, 0))) {
             val(name, minCount, size) = spec
             val klass = classNamed("java.lang." + name)

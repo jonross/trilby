@@ -151,6 +151,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     /** 
      * Record the location of an object in the heap.  
      * Panics if the class definition has not been read.
+     * Rounds size up to a multiple of idsize (assumes aligned structs.)
      * 
      * @param id The heap ID of the object
      * @param classHid The heap ID of its class
@@ -169,7 +170,11 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         classDef.addObject(size)
         val oid = objectIdMap.map(id, true)
         classes.addObject(classDef, oid)
-        setObjectSize(oid, size)
+        
+        val delta = size % idSize
+        val actualSize = if (delta == 0) size else size + (idSize - delta)
+        setObjectSize(oid, actualSize)
+        
         // offsets.add(offset)
         oid
     }
