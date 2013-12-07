@@ -52,6 +52,9 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     /** Subcontract out class information */
     val classes = new ClassInfo()
     
+    /** Histogram display threshold, in total bytes */
+    var threshold = 1024L
+    
     /** Maps heap IDs to UTF-8 strings (field names, class names etc.) */
     private[this] val heapNamesById = new TLongObjectHashMap[String](100000)
     

@@ -81,7 +81,7 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
         var totalCount = 0
         var totalBytes = 0L
         
-        for (slot <- slots) {
+        for (slot <- slots if slot.nbytes >= heap.threshold) {
             if (showIds)
                 out.write("%7d %10d %10d %s\n".format(slot.classDef.classId, 
                     slot.count, slot.nbytes, slot.classDef.name))

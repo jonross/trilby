@@ -84,12 +84,16 @@ class CommandParser(heap: Heap) extends RegexParsers
     // Matches misc functions
     
     def miscfn =
+        
         "skip" ~ types ^^   { case _ ~ t => () => heap.skipClasses(t, true) } |
         "skip" ^^           { case _ => () => heap.showSkippedClasses() } |
         "noskip" ~ types ^^ { case _ ~ t => () => heap.skipClasses(t, false) } |
         "noskip" ^^         { case _ => () => heap.showSkippedClasses() } |
         "set" ~ "garbage" ^^   { case _ => () => heap.hideGarbage = false } |
-        "set" ~ "nogarbage" ^^ { case _ => () => heap.hideGarbage = true }
+        "set" ~ "nogarbage" ^^ { case _ => () => heap.hideGarbage = true } |
+        "set" ~ "threshold" ~ "[0-9]+[kKmMgG]?".r ^^ { 
+            case _ ~ _ ~ expr => () => heap.threshold = parseSize(expr)
+        }
         
     def action: Parser[() => Any] =
         fullQuery ^^  { case x => x } |
@@ -99,5 +103,14 @@ class CommandParser(heap: Heap) extends RegexParsers
         case Error(msg, next) => sys.error(msg)
         case Failure(msg, next) => sys.error(msg)
         case p: ParseResult[() => Any] => p.get
+    }
+    
+    def parseSize(expr: String) = {
+        val re = "([0-9]+)([kKmMgG]?)".r
+        val multiplier = Map("" -> 1L, "k" -> (1L<<10), "m" -> (1L<<20), "g" -> (1L<<30))
+        expr match {
+            case re(num, suffix) =>
+                num.toLong * multiplier(suffix.toLowerCase)
+        }
     }
 }
