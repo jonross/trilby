@@ -69,7 +69,7 @@ class IntLists(onHeap: Boolean) {
             lasts.set(listId, cons)
         }
         else {
-            val last = lasts.get(listId)
+            val last = lasts.pget(listId)
             lasts.set(listId, cons)
             chains.set(last+1, cons)
         }
@@ -86,7 +86,7 @@ class IntLists(onHeap: Boolean) {
             throw new IllegalArgumentException("Invalid list ID: " + listId)
         }
         
-        var cons = firsts.get(listId)
+        var cons = firsts.pget(listId)
         while (cons != 0) {
             val next = chains.get(cons+1)
             _free(cons)
@@ -108,7 +108,7 @@ class IntLists(onHeap: Boolean) {
             throw new IllegalArgumentException("Invalid list ID: " + listId)
         }
         
-        val cons = firsts.get(listId)
+        val cons = firsts.pget(listId)
         if (cons > 0) chains.get(cons) else orElse
     }
     
@@ -124,7 +124,7 @@ class IntLists(onHeap: Boolean) {
     def walk(listId: Int) = {
         if (listId < 0 || listId >= firsts.size)
             throw new IllegalArgumentException("Invalid list ID: " + listId)
-        _cursor(firsts.get(listId))
+        _cursor(firsts.pget(listId))
     }
     
     /**
