@@ -49,15 +49,19 @@ class IdMap
     
     private[this] val LOAD_FACTOR = 0.7f
 
-    def map(longId: Long, primary: Boolean): Int = {
-
+    def add(longId: Long) = {
+        
         if (longId == 0) {
             panic("Attempt to id-map null pointer")
         }
-        else if (longId > (1L << 40) - 1) {
+        
+        if (longId > (1L << 40) - 1) {
             panic("ID too big: %x".format(longId))
         }
-
+        
+        if (nextId == Integer.MAX_VALUE)
+            panic("identifier limit exceeded")
+        
         val slot = (longId >>> 16).toInt
         val key = (longId & 0xFFFF).toShort
         
@@ -66,22 +70,22 @@ class IdMap
             map = new TShortIntHashMap(INITIAL_CAPACITY, LOAD_FACTOR)
             maps(slot) = map
         }
-
-        val id = map.get(key)
-        if (id > 0) {
-            return id
+        
+        map.put(key, nextId)
+        nextId += 1
+        nextId - 1
+    }
+    
+    def apply(longId: Long) = {
+        
+        if (longId == 0) {
+            panic("Attempt to id-map null pointer")
         }
-        else if (!primary) {
-            return 0
-        }
-        else if (nextId == Integer.MAX_VALUE) {
-            return error("identifier limit exceeded")
-        }
-        else {
-            map.put(key, nextId)
-            nextId += 1
-            return nextId - 1
-        }
+        
+        val slot = (longId >>> 16).toInt
+        val key = (longId & 0xFFFF).toShort
+        val map = maps(slot)
+        if (map == null) 0 else map.get(key)
     }
     
     def maxId = nextId - 1

@@ -66,7 +66,7 @@ class ObjectGraphBuilder {
             var dead = 0
             for (i <- t until refsToLo4.size by 4) {
                 val unmapped = (refsToHi1.get(i) << 32L) | (refsToLo4.get(i) & 0xFFFFFFFFL)
-                val mapped = idMap.map(unmapped, false)
+                val mapped = idMap(unmapped)
                 refsToLo4.set(i, mapped)
                 if (mapped == 0)
                     dead += 1

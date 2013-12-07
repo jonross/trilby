@@ -39,12 +39,12 @@ class TestIdMap extends FunSuite
         for (i <- 0 until NUM_IDS) {
             id += (1 + 10 * Math.random()).toLong
             in(i) = id
-            out(i) = map.map(id, true)
+            out(i) = map.add(id)
         }
         
         for (i <- 0 until NUM_IDS) {
             assert(i + 1 === out(i))
-            assert(out(i) === map.map(in(i), false))
+            assert(out(i) === map(in(i)))
         }
     }
 }

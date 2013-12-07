@@ -127,7 +127,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
      */
 
     def mapId(id: Long) =
-        objectIdMap.map(id, false)
+        objectIdMap(id)
     
     /**
      * Return a fabricated heap ID higher than the highest one already seen.  This
@@ -168,7 +168,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         if (classDef == null)
             panic("Class with HID " + classHid + " not defined yet");
         classDef.addObject(size)
-        val oid = objectIdMap.map(id, true)
+        val oid = objectIdMap.add(id)
         classes.addObject(classDef, oid)
         
         val delta = size % idSize
@@ -431,7 +431,7 @@ trait GCRootData {
         
         for (i <- 0 until tmpGCRoots.size) {
             val rootHid = tmpGCRoots.get(i)
-            val rootOid = idMap.map(rootHid, false)
+            val rootOid = idMap(rootHid)
             if (rootOid != 0) { 
                 heap.addReference(masterRoot, rootHid)
                 gcRoots(goodRoots) = rootOid
