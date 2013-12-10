@@ -24,6 +24,7 @@ package trilby.util
 
 import gnu.trove.map.hash.TShortIntHashMap
 import trilby.util.Oddments._
+import java.util.ArrayList
 
 /**
  * Maps long identifiers to integer identifiers as they are encountered in the
@@ -33,8 +34,68 @@ import trilby.util.Oddments._
 class IdMap
 {
     private[this] val maps = new Array[TShortIntHashMap](1 << 24)
+    private[this] val segments = new ArrayList[IdSegment]
+    private[this] var indexBase = -1
+    private[this] var prevSlot = 0
     private[this] var nextId = 1
 
+    def addHeapId(hid: Long) = {
+        
+        if (hid == 0) {
+            panic("Attempt to id-map null pointer")
+        }
+        
+        if (hid > (1L << 40) - 1) {
+            panic("ID too big: %x".format(hid))
+        }
+        
+        if (nextId == Integer.MAX_VALUE)
+            panic("identifier limit exceeded")
+        
+        var index = (hid >>> 16).toInt
+        val key = (hid & 0xFFFF).toShort
+        
+        if (indexBase == -1) {
+            indexBase = index
+        }
+        index -= indexBase
+        
+        if (index >= segments.size) {
+            segments.ensureCapacity(index + 1)
+            for (i <- segments.size to index)
+                segments.add(null)
+        }
+        
+        var segment = segments.get(index)
+        if (segment == null) {
+            segment = new IdSegment
+            segments.set(index, segment)
+        }
+        
+        segment(key) = nextId
+        nextId += 1
+        nextId - 1
+    }
+    
+    def apply(longId: Long) = {
+        
+        if (longId == 0) {
+            panic("Attempt to id-map null pointer")
+        }
+        
+        val index = (longId >>> 16).toInt - indexBase
+        val key = (longId & 0xFFFF).toShort
+        if (index >= segments.size) 0 else {
+            val segment = segments.get(index)
+            if (segment == null) 0 else segment(key)
+        }
+    }
+    
+    def maxId = nextId - 1
+}
+
+class IdSegment
+{
     // Determined this empirically.  Below this point, rehashing as per-slot population
     // grows reduces performance; raising it gives no meaningful improvement on heaps
     // tested.
@@ -49,44 +110,9 @@ class IdMap
     
     private[this] val LOAD_FACTOR = 0.7f
 
-    def add(longId: Long) = {
-        
-        if (longId == 0) {
-            panic("Attempt to id-map null pointer")
-        }
-        
-        if (longId > (1L << 40) - 1) {
-            panic("ID too big: %x".format(longId))
-        }
-        
-        if (nextId == Integer.MAX_VALUE)
-            panic("identifier limit exceeded")
-        
-        val slot = (longId >>> 16).toInt
-        val key = (longId & 0xFFFF).toShort
-        
-        var map = maps(slot)
-        if (map == null) {
-            map = new TShortIntHashMap(INITIAL_CAPACITY, LOAD_FACTOR)
-            maps(slot) = map
-        }
-        
-        map.put(key, nextId)
-        nextId += 1
-        nextId - 1
-    }
+    private[this] val map = new TShortIntHashMap(INITIAL_CAPACITY, LOAD_FACTOR)
     
-    def apply(longId: Long) = {
-        
-        if (longId == 0) {
-            panic("Attempt to id-map null pointer")
-        }
-        
-        val slot = (longId >>> 16).toInt
-        val key = (longId & 0xFFFF).toShort
-        val map = maps(slot)
-        if (map == null) 0 else map.get(key)
-    }
+    def update(key: Short, id: Int) = map.put(key, id)
     
-    def maxId = nextId - 1
+    def apply(key: Short) = map.get(key)
 }

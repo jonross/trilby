@@ -168,7 +168,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         if (classDef == null)
             panic("Class with HID " + classHid + " not defined yet");
         classDef.addObject(size)
-        val oid = objectIdMap.add(id)
+        val oid = objectIdMap.addHeapId(id)
         classes.addObject(classDef, oid)
         
         val delta = size % idSize

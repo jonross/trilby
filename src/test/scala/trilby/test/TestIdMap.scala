@@ -39,7 +39,7 @@ class TestIdMap extends FunSuite
         for (i <- 0 until NUM_IDS) {
             id += (1 + 10 * Math.random()).toLong
             in(i) = id
-            out(i) = map.add(id)
+            out(i) = map.addHeapId(id)
         }
         
         for (i <- 0 until NUM_IDS) {
