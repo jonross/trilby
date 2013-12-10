@@ -105,6 +105,8 @@ class TestGraphs extends FunSuite {
         
         val up = g.isInstanceOf[MutableIntGraph]
         
+        // Verify raw edge array matches traversal
+        
         for (e <- edges) {
             var i = if (up) 1 else e.length - 1
             var cur = g.walkOutEdges(e(0))
@@ -114,6 +116,29 @@ class TestGraphs extends FunSuite {
                 cur = g.nextOutEdge(cur)
             }
             assert(i === (if (up) e.length else 0))
+        }
+        
+        // Verify calculated length matches traversed length
+        
+        for (v <- 1 to g.maxNode) {
+            
+            var calcLen = g.inDegree(v)
+            var walkLen = 0
+            var cur = g.walkInEdges(v)
+            while (cur.valid) {
+                walkLen += 1
+                cur = g.nextInEdge(cur)
+            }
+            assert(calcLen === walkLen)
+            
+            calcLen = g.outDegree(v)
+            walkLen = 0
+            cur = g.walkOutEdges(v)
+            while (cur.valid) {
+                walkLen += 1
+                cur = g.nextOutEdge(cur)
+            }
+            assert(calcLen === walkLen)
         }
         
         if (doms == null)

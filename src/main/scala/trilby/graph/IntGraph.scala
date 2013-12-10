@@ -49,6 +49,10 @@ trait IntGraph {
    
     def nextOutEdge(cursor: IntCursor): IntCursor
     
+    def inDegree(v: Int): Int
+    
+    def outDegree(v: Int): Int
+    
     def forEachReferrer(oid: Int, fn: Int => Unit) {
         var cur = walkInEdges(oid)
         while (cur.valid) {
@@ -70,24 +74,4 @@ trait IntGraph {
      */
     
     def free(): Unit
-    
-    def inDegree(v: Int) = {
-        var degree = 0
-        var cur = walkInEdges(v)
-        while (cur != 0) {
-            degree += 1
-            cur = nextInEdge(cur)
-        }
-        degree
-    }
-    
-    def outDegree(v: Int) = {
-        var degree = 0
-        var cur = walkOutEdges(v)
-        while (cur != 0) {
-            degree += 1
-            cur = nextOutEdge(cur)
-        }
-        degree
-    }
 }

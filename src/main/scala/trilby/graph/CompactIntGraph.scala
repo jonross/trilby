@@ -136,6 +136,17 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
             val offset = 1 + cursor.position
             if (boundaries(offset)) stop else IntCursor(offset, edges(offset))
         }
+        
+        def degree(v: Int) = {
+            val offset = offsets(v)
+            if (offset == 0) 0 else {
+                var degree = 1
+                while (! boundaries(offset + degree)) {
+                    degree += 1
+                }
+                degree
+            }
+        }
     }
     
     /** @see IntGraph#maxNode */
@@ -157,6 +168,10 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
     /** @see IntGraph#nextOutEdge */
     
     def nextOutEdge(cursor: IntCursor) = out.next(cursor)
+    
+    def inDegree(v: Int) = in.degree(v)
+    
+    def outDegree(v: Int) = out.degree(v)
     
     private def logStats(inOut: String, degrees: HugeArray.OfInt) {
         log.info("Frequency of " + inOut + "-degree across " + maxId + " nodes");

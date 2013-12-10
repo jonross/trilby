@@ -59,4 +59,8 @@ class MutableIntGraph(onHeap: Boolean) extends IntGraph
     def walkOutEdges(v: Int) = out.walk(v)
     
     def nextOutEdge(cursor: IntCursor) = out.next(cursor)
+    
+    def inDegree(v: Int) = in.length(v)
+    
+    def outDegree(v: Int) = out.length(v)
 }

@@ -133,6 +133,18 @@ class IntLists(onHeap: Boolean) {
     
     def next(cursor: IntCursor) = 
         _cursor(chains.get(cursor.position + 1))
+        
+    def length(listId: Int) = {
+        if (listId < 0 || listId >= firsts.size)
+            throw new IllegalArgumentException("Invalid list ID: " + listId)
+        var len = 0
+        var cons = firsts.pget(listId)
+        while (cons != 0) {
+            cons = chains.get(cons + 1)
+            len += 1
+        }
+        len
+    }
     
     private def _cursor(cons: Int) = 
         if (cons == 0) stop else IntCursor(cons, chains.get(cons))
