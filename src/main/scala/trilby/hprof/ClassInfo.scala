@@ -225,7 +225,7 @@ class ClassDef(/** Who holds this def */
      *  Is this ClassInfo for java.lang.Object
      */
     
-    val isRoot = name.equals("java.lang.Object")
+    val isRoot = name.equals("root") || name.equals("java.lang.Object")
     
     /**
      * Record an additional instance of this class, of the indicated size.

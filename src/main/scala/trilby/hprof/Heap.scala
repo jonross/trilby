@@ -87,6 +87,9 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     
     val log = LoggerFactory.getLogger(getClass)
 
+    addClassDef("root", 1L, 1L, new Array[Java.Type](0), new Array[String](0))
+    addInstance(1L, 1L, 1L, 0)
+    
     /** 
      * Record a reference from the heap ID of a class to the heap ID of its
      * name string.
@@ -285,14 +288,10 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         staticRefs.free()
         staticRefs = null
         
-        createMasterRoot(fabricateHeapId(), fabricateOffset())
-        
         time("Optimizing sizes") {
             optimizeSizes(maxId)
         }
 
-        val numRoots = resolveGCRoots(objectIdMap)
-        
         time("Remapping heap IDs") {
             graphBuilder.mapHeapIds(objectIdMap)
         }
@@ -315,7 +314,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
             if (options.dominators) {
                 time("Finding dominators") {
                     // val dom = new Dominators(graph.g)
-                    val(n, dom) = DominatorsOG(graph, masterRoot, false)
+                    val(n, dom) = DominatorsOG(graph, 1, false)
                     domTree = dom
                     n
                 }
@@ -323,6 +322,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
             else 0
         
         // Correct count for master root references
+        val numRoots = graph.outDegree(1)
         log.info("Read %d references, %d dead".format(graphBuilder.size - numRoots, graphBuilder.numDead))
         if (options.dominators) {
             log.info("%.0f%% of %d objects are simply-dominated\n".format(100d * nSimply / maxId, maxId))
@@ -351,7 +351,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     def maxId = _maxId()
     
     def textDump() {
-        for (oid <- 1 to maxId if oid != masterRoot) {
+        for (oid <- 2 to maxId) {
             val classDef = classes.getForObjectId(oid)
             printf("#%d is a %s\n", oid, classDef.name)
             forEachReferrer(oid, v => printf("  <- #%d\n", v))
@@ -399,62 +399,14 @@ trait GCRootData {
     def heap: Heap
     def log: Logger
     
-    /** Temporary object, records heap IDs of GC roots */
-    private[this] var tmpGCRoots = new HugeAutoArray.OfLong(true)
-    
-    /** After heap read, {@link #tmpGCRoots} is mapped to these */
-    private[hprof] var gcRoots: Array[Int] = null
-    
     /** Indicates which objects are live */
     private[this] var liveObjects: BitSet = null
     
     /** Hide unreachable objects in analyses */
     var hideGarbage = true // leave off until fully debugged
     
-    private[this] var goodRoots = 0
-    private[this] var badRoots = 0
-    
-    var masterRoot = 0
-    
     def addGCRoot(id: Long, desc: String) {
-        tmpGCRoots.add(id)
-    }
-    
-    def createMasterRoot(hid: Long, offset: Long) {
-        val jlo = heap.classes.getByName("java.lang.Object")
-        masterRoot = heap.addInstance(hid, jlo.heapId, offset, 0)
-    }
-        
-    def resolveGCRoots(idMap: IdMap) = {
-        
-        gcRoots = new Array[Int](tmpGCRoots.size)
-        
-        for (i <- 0 until tmpGCRoots.size) {
-            val rootHid = tmpGCRoots.get(i)
-            val rootOid = idMap(rootHid)
-            if (rootOid != 0) { 
-                heap.addReference(masterRoot, rootHid)
-                gcRoots(goodRoots) = rootOid
-                goodRoots += 1
-            }
-            else {
-                badRoots += 1
-            }
-        }
-        
-        tmpGCRoots.free()
-        tmpGCRoots = null // allow GC
-        gcRoots = gcRoots.toList.take(goodRoots).toArray
-        
-        // Not clear this warning is meaningful... most GC roots appear unmappable,
-        // perhaps because only a few of the root records match heap objects.
-        
-        if (badRoots == 0)
-            log.info(goodRoots + " GC roots")
-        else
-            log.warn((goodRoots + badRoots) + " GC roots, " + badRoots + " bad")
-            
-        goodRoots
+        heap.addReference(1, id)
     }
     
     def findLiveObjects() {
@@ -468,14 +420,14 @@ trait GCRootData {
                 reachable += 1
                 liveObjects.set(node)
             }
-            add(masterRoot)
+            add(1)
         }.run()
         // Correct counts for master root
         log.info("%d of %d objects are live".format(reachable - 1, heap.maxId - 1))
     }
     
     def canUse(oid: Int) =
-        oid != masterRoot && (! heap.hideGarbage || liveObjects(oid))
+        oid != 1 && (! heap.hideGarbage || liveObjects(oid))
 }
 
 trait SkipSet {
