@@ -40,7 +40,7 @@ import trilby.util.Oddments._
 class Dominators(val g: IntGraph) {
 
     var buffers: List[ByteBuffer] = Nil
-    var num = 1
+    var dmax = 0
     val PAR = 64
     
     private[this] def getInts(size: Int) = {
@@ -49,28 +49,29 @@ class Dominators(val g: IntGraph) {
         buf.asIntBuffer
     }
     
-    val max = g.maxNode
-    val ord = getInts(max+1)
-    val rev = getInts(max+1)
-    val parent = getInts(max+1)
-    val semi = getInts(max+1)
-    val idom = getInts(max+1)
-    val ancestor = getInts(max+1)
-    val best = getInts(max+1)
+    val ord = getInts(g.maxNode + 1)
+    val parent = getInts(g.maxNode + 1)
+    val rev = getInts(g.maxNode + 1)
+    
+    // dfs(1, 0)
+    dfs()
+    
+    val semi = getInts(dmax + 1)
+    val idom = getInts(dmax + 1)
+    val ancestor = getInts(dmax + 1)
+    val best = getInts(dmax + 1)
     val buck = new IntLists(false)
     
     init()
     
     def init() {
 
-        buck.add(max, 0)
-        buck.clear(max)
+        buck.add(dmax, 0)
+        buck.clear(dmax)
 
-        // dfs(1, 0)
-        dfs()
-        
         for (offset <- 1 to PAR par) {
-            for (v <- offset to max by PAR) {
+            for (v <- offset to dmax by PAR) {
+                rev.put(ord.get(v), v)
                 semi.put(v, v)
                 idom.put(v, 0)
                 ancestor.put(v, 0);
@@ -78,7 +79,7 @@ class Dominators(val g: IntGraph) {
             }
         }
 
-        for (w <- max until 1 by -1) {
+        for (w <- dmax until 1 by -1) {
             val p = parent.get(w)
 
             // step 2
@@ -109,7 +110,7 @@ class Dominators(val g: IntGraph) {
 
         // step 4
         idom.put(1, 0)
-        for (w <- 2 to max) {
+        for (w <- 2 to dmax) {
             if (idom.get(w) != semi.get(w)) {
                 idom.put(w, idom.get(idom.get(w)))
             }
@@ -117,12 +118,10 @@ class Dominators(val g: IntGraph) {
     }
 
     def get() = {
-        val d = new HugeArray.OfInt(max + 1)
-        d(0) = 0
-        d(1) = 0
+        val d = new HugeArray.OfInt(g.maxNode + 1)
         for (offset <- 1 to PAR par) {
-            for (i <- (offset+1) to max by PAR) {
-                d(i) = rev.get(idom.get(ord.get(i)))
+            for (v <- (offset+1) to dmax by PAR) {
+                d(rev.get(v)) = rev.get(idom.get(v))
             }
         }
         d
@@ -140,14 +139,14 @@ class Dominators(val g: IntGraph) {
     
     private def dfs() {
         new PreorderDFS {
-            def maxNode = max
+            def maxNode = g.maxNode
             def visit(_v: Int) {
                 // get at parent by pushing it ahead of target node
                 val _p = stack.pop()
-                val v = num
-                num += 1
+                dmax += 1
+                val v = dmax
                 ord.put(_v, v)
-                rev.put(v, _v)
+                // rev.put(v, _v)
                 parent.put(v, ord.get(_p))
             }
             def addChildren(_v: Int) {
