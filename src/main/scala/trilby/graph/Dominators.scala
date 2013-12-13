@@ -85,12 +85,14 @@ class Dominators(val g: IntGraph) {
             var cur = g.walkInEdges(rev.get(w))
             while (cur.valid) {
                 val v = ord.get(cur.value)
-                val u = eval(v)
-                val semi_u = semi.get(u)
-                if (semi.get(w) > semi_u)
-                    semi.put(w, semi_u)
-                buck.add(semi.get(w), w)
-                link(p, w)
+                if (v > 0) {
+                    val u = eval(v)
+                    val semi_u = semi.get(u)
+                    if (semi.get(w) > semi_u)
+                        semi.put(w, semi_u)
+                    buck.add(semi.get(w), w)
+                    link(p, w)
+                }
                 cur = g.nextInEdge(cur)
             }
 

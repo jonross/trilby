@@ -39,12 +39,16 @@ class TestGraphs extends FunSuite {
         Array(18),
         Array(19, 20, 21, 22),
         Array(20),
-        Array(22),
+        Array(21),
         Array(22),
         Array(23, 24),
         Array(24, 25, 26),
         Array(25, 26),
-        Array(26, 23)
+        Array(26, 23),
+        Array(27, 28, 29),
+        Array(28),
+        Array(29),
+        Array(30, 10)
     )
     
     private[this] val doms_2 = Array(
@@ -74,14 +78,18 @@ class TestGraphs extends FunSuite {
         1,
         23,
         24,      // 25
-        24
+        24,
+        0,
+        0,
+        0,
+        0
     )
     
     test("graphs") {
         testIt(edges_1, makeMutableGraph(edges_1), null)
         testIt(edges_2, makeMutableGraph(edges_2), doms_2)
         testIt(edges_1, makeCompactGraph(edges_1, 6), null)
-        testIt(edges_2, makeCompactGraph(edges_2, 26), doms_2)
+        testIt(edges_2, makeCompactGraph(edges_2, 30), doms_2) 
     }
     
     private def makeMutableGraph(edges: Array[Array[Int]]) = {

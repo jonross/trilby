@@ -122,9 +122,9 @@ class IntLists(onHeap: Boolean) {
      */
     
     def walk(listId: Int) = {
-        if (listId < 0 || listId >= firsts.size)
+        if (listId < 0)
             throw new IllegalArgumentException("Invalid list ID: " + listId)
-        _cursor(firsts.pget(listId))
+        if (listId < firsts.size) _cursor(firsts.pget(listId)) else stop
     }
     
     /**
@@ -135,15 +135,17 @@ class IntLists(onHeap: Boolean) {
         _cursor(chains.get(cursor.position + 1))
         
     def length(listId: Int) = {
-        if (listId < 0 || listId >= firsts.size)
+        if (listId < 0)
             throw new IllegalArgumentException("Invalid list ID: " + listId)
-        var len = 0
-        var cons = firsts.pget(listId)
-        while (cons != 0) {
-            cons = chains.get(cons + 1)
-            len += 1
+        if (listId >= firsts.size) 0 else {
+            var len = 0
+            var cons = firsts.pget(listId)
+            while (cons != 0) {
+                cons = chains.get(cons + 1)
+                len += 1
+            }
+            len
         }
-        len
     }
     
     private def _cursor(cons: Int) = 
