@@ -27,6 +27,7 @@ import java.nio.IntBuffer
 import trilby.nonheap.NHUtils
 import trilby.nonheap.HugeArray
 import trilby.util.Oddments._
+import trilby.util.BitSet
 
 /**
  * Off-heap implementation of Lengauer-Tarjan for dominators in an {@link IntGraph}.
@@ -37,7 +38,7 @@ import trilby.util.Oddments._
  * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.56.8903
  */
 
-class Dominators(val g: IntGraph) {
+class Dominators3(val g: IntGraph) {
 
     var buffers: List[ByteBuffer] = Nil
     var dmax = 0
@@ -49,6 +50,11 @@ class Dominators(val g: IntGraph) {
         buf.asIntBuffer
     }
     
+    val direct = new BitSet(g.maxNode + 1)
+    var nDirect = 0
+        
+    preDFS()
+    
     val ord = getInts(g.maxNode + 1)
     val parent = getInts(g.maxNode + 1)
     val rev = getInts(g.maxNode + 1)
@@ -56,23 +62,32 @@ class Dominators(val g: IntGraph) {
     // dfs(1, 0)
     dfs()
     
+    printf("dmax = %d\n", dmax)
+    
     val semi = getInts(dmax + 1)
     val idom = getInts(dmax + 1)
     val ancestor = getInts(dmax + 1)
     val best = getInts(dmax + 1)
     val buck = new IntLists(false)
     
+    for (offset <- 1 to PAR par) {
+        for (v <- offset to g.maxNode by PAR) {
+            rev.put(ord.get(v), v)
+        }
+    }
+                
     init()
     
     def init() {
 
         for (offset <- 1 to PAR par) {
             for (v <- offset to dmax by PAR) {
-                rev.put(ord.get(v), v)
                 semi.put(v, v)
                 idom.put(v, 0)
                 ancestor.put(v, 0);
                 best.put(v, v)
+                    printf("%d (ord %d) parent is %d (ord %d)\n",
+                           rev.get(v), v, rev.get(parent.get(v)), parent.get(v))
             }
         }
 
@@ -119,6 +134,16 @@ class Dominators(val g: IntGraph) {
         for (offset <- 1 to PAR par) {
             for (v <- (offset+1) to dmax by PAR) {
                 d(rev.get(v)) = rev.get(idom.get(v))
+                printf("%d dominates %d\n", d(rev.get(v)), rev.get(v))
+            }
+            for (v <- offset to g.maxNode by PAR) {
+                if (direct(v)) {
+                    d(v) = g.walkInEdges(v).value
+                    printf("%d dominates %d\n", d(v), v)
+                }
+                else {
+                    printf("no dominator for %d\n", v)
+                }
             }
         }
         d
@@ -129,28 +154,77 @@ class Dominators(val g: IntGraph) {
         buck.free()
     }
     
+    // Find direct-dominated nodes; these are nodes with one afferent node and
+    // efferent nodes that are themselves direct-dominated.
+        
+    private def preDFS() =
+        new PostorderDFS {
+            def maxNode = g.maxNode
+            def addChildren(node: Int) {
+                var cur = g.walkOutEdges(node)
+                while (cur.valid) {
+                    val child = cur.value
+                    add(child)
+                    cur = g.nextOutEdge(cur)
+                }
+            }
+            def visit(node: Int) {
+                var cur = g.walkInEdges(node)
+                if (! cur.valid) {
+                    // printf("%d is not direct-dominated because in-degree == 0\n", node)
+                    dmax += 1
+                    return
+                }
+                if (g.nextInEdge(cur).valid) {
+                    // printf("%d is not direct-dominated because in-degree > 1\n", node)
+                    dmax += 1
+                    return
+                }
+                cur = g.walkOutEdges(node)
+                while (cur.valid) {
+                    val child = cur.value
+                    if (!direct(child)) {
+                        // printf("%d is not direct-dominated because %d is not\n", node, child)
+                        dmax += 1
+                        return
+                    }
+                    cur = g.nextOutEdge(cur)
+                }
+                printf("%d is direct-dominated\n", node)
+                direct.set(node)
+                nDirect += 1
+            }
+            add(1)
+        }.run()
+    
     // For reasons TBD, this DFS creates a subtle difference in the resulting tree for
     // large graphs.  The DFS walks the child list in reverse order because of the way
     // CompactIntGraph edges are filled.  It should not matter to the results, but does.
     // To investigate.
     
     private def dfs() {
+        var num = 0
+        var isDirect = false
         new PreorderDFS {
             def maxNode = g.maxNode
             def visit(_v: Int) {
+                isDirect = direct(_v)
                 // get at parent by pushing it ahead of target node
                 val _p = stack.pop()
-                dmax += 1
-                val v = dmax
-                ord.put(_v, v)
-                // rev.put(v, _v)
-                parent.put(v, ord.get(_p))
+                if (! isDirect) {
+                    num += 1
+                    val v = num
+                    ord.put(_v, v)
+                    parent.put(v, ord.get(_p))
+                }
             }
             def addChildren(_v: Int) {
-                var cur = g.walkOutEdges(_v)
-                while (cur.valid) {
-                    add(_v, cur.value)
-                    cur = g.nextOutEdge(cur)
+                if (! isDirect) {
+                    var cur = g.walkOutEdges(_v)
+                    while (cur.valid) {
+                        add(_v, cur.value)
+                        cur = g.nextOutEdge(cur)
+                    }
                 }
             }
             stack.push(0)

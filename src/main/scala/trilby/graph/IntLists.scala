@@ -82,8 +82,11 @@ class IntLists(onHeap: Boolean) {
     
     def clear(listId: Int) {
         
-        if (listId < 0 || listId >= firsts.size) {
+        if (listId < 0) {
             throw new IllegalArgumentException("Invalid list ID: " + listId)
+        }
+        else if (listId >= firsts.size) {
+            return
         }
         
         var cons = firsts.pget(listId)
