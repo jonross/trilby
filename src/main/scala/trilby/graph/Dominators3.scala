@@ -40,8 +40,8 @@ import trilby.util.BitSet
 
 class Dominators3(val g: IntGraph) {
 
-    var buffers: List[ByteBuffer] = Nil
-    val PAR = 64
+    private[this] var buffers: List[ByteBuffer] = Nil
+    private[this] val PAR = 64
     
     private[this] def getInts(size: Int) = {
         val buf = NHUtils.alloc(size * 4, false)
@@ -49,23 +49,23 @@ class Dominators3(val g: IntGraph) {
         buf.asIntBuffer
     }
     
-    val direct = new BitSet(g.maxNode + 1)
-    var directCount = 0
-    var nonDirectCount = 0
+    private[this] val direct = new BitSet(g.maxNode + 1)
+    private[this] var directCount = 0
+    private[this] var nonDirectCount = 0
     
     preDFS()
     
-    val ord = getInts(g.maxNode + 1)
-    val parent = getInts(g.maxNode + 1)
-    val rev = getInts(g.maxNode + 1)
+    private[this] val ord = getInts(g.maxNode + 1)
+    private[this] val parent = getInts(g.maxNode + 1)
+    private[this] val rev = getInts(g.maxNode + 1)
     
     dfs()
     
-    val semi = getInts(nonDirectCount + 1)
-    val idom = getInts(nonDirectCount + 1)
-    val ancestor = getInts(nonDirectCount + 1)
-    val best = getInts(nonDirectCount + 1)
-    val buck = new IntLists(false)
+    private[this] val semi = getInts(nonDirectCount + 1)
+    private[this] val idom = getInts(nonDirectCount + 1)
+    private[this] val ancestor = getInts(nonDirectCount + 1)
+    private[this] val best = getInts(nonDirectCount + 1)
+    private[this] val buck = new IntLists(false)
     
     for (offset <- 1 to PAR par) {
         for (v <- offset to g.maxNode by PAR) {
@@ -100,8 +100,10 @@ class Dominators3(val g: IntGraph) {
                     val semi_u = semi.get(u)
                     if (semi.get(w) > semi_u)
                         semi.put(w, semi_u)
-                    buck.add(semi.get(w), w)
-                        printf("add %d to %d\n", w, semi.get(w))
+                    val sem = semi.get(w)
+                    if (buck.head(sem) != w)
+                        buck.add(sem, w)
+                    // printf("add %d to %d\n", w, semi.get(w))
                     link(p, w)
                 }
                 cur = g.nextInEdge(cur)
@@ -127,6 +129,8 @@ class Dominators3(val g: IntGraph) {
         }
     }
 
+    def nDirect = directCount
+    
     def get() = {
         val d = new HugeArray.OfInt(g.maxNode + 1)
         for (offset <- 1 to PAR par) {
@@ -145,6 +149,26 @@ class Dominators3(val g: IntGraph) {
             }
         }
         d
+    }
+    
+    def graph = {
+        
+        // Create dominator tree; add dominance from reduced graph,
+        // then add simple leaf dominance.
+        
+        def domEdges(fn: (Int, Int) => Unit) = {
+            for (v <- 2 until nonDirectCount) {
+                fn(rev.get(idom.get(v)), rev.get(v))
+            }
+            for (v <- 1 to g.maxNode) {
+                if (direct(v)) {
+                    val w = g.walkInEdges(v).value
+                    fn(w, v)
+                }
+            }
+        }
+        new CompactIntGraph(g.maxNode, domEdges, false)
+        
     }
     
     def free() {

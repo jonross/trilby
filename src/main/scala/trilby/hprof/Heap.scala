@@ -38,6 +38,7 @@ import trilby.nonheap.HugeAutoArray
 import trilby.util.SmallCounts
 import trilby.util.BitSet
 import trilby.graph.Dominators
+import trilby.graph.Dominators3
 import trilby.graph.DominatorsOG
 import trilby.graph.CompactIntGraph
 
@@ -310,22 +311,29 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
             findLiveObjects()
         }
         
-        val nSimply = 
-            if (options.dominators) {
-                time("Finding dominators") {
-                    // val dom = new Dominators(graph.g)
-                    val(n, dom) = DominatorsOG(graph, 1, false)
-                    domTree = dom
-                    n
+        var nDirect = 0
+        var useV3 = true
+        
+        if (options.dominators) {
+            time("Finding dominators") {
+                if (useV3) {
+                    val dom = new Dominators3(graph)
+                    nDirect = dom.nDirect
+                    domTree = dom.graph
                 }
-            } 
-            else 0
+                else {
+                    val(n, dom) = DominatorsOG(graph, 1, false)
+                    nDirect = n
+                    domTree = dom
+                }
+            }
+        }
         
         // Correct count for master root references
         val numRoots = graph.outDegree(1)
         log.info("Read %d references, %d dead".format(graphBuilder.size - numRoots, graphBuilder.numDead))
         if (options.dominators) {
-            log.info("%.0f%% of %d objects are simply-dominated\n".format(100d * nSimply / maxId, maxId))
+            log.info("%.0f%% of %d objects are simply-dominated\n".format(100d * nDirect / maxId, maxId))
         }
         
         graphBuilder.free()

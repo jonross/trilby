@@ -101,18 +101,18 @@ class IntLists(onHeap: Boolean) {
     }
     
     /**
-     * Return the head of a list, or the indicated alternative if none.
+     * Return the head of a list, or 0 if empty.
      * @param listId Non-negative numeric list ID
      */
     
-    def head(listId: Int, orElse: Int) = {
-        
-        if (listId < 0 || listId >= firsts.size) {
+    def head(listId: Int) = {
+        if (listId < 0) {
             throw new IllegalArgumentException("Invalid list ID: " + listId)
         }
-        
-        val cons = firsts.pget(listId)
-        if (cons > 0) chains.get(cons) else orElse
+        if (listId >= firsts.size) 0 else {
+            val cons = firsts.pget(listId)
+            if (cons > 0) chains.get(cons) else 0
+        }
     }
     
     /**

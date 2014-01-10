@@ -158,24 +158,6 @@ class Dominators(val g: IntGraph) {
         }.run()
     }
     
-    /* prior, blows up the stack
-    private def dfs(_v: Int, _p: Int) {
-        if (ord.get(_v) == 0) {
-            printf("visit %d parent %d\n", _v, _p)
-            val v = num
-            num += 1
-            ord.put(_v, v)
-            rev.put(v, _v)
-            parent.put(v, ord.get(_p))
-            var cur = g.walkOutEdges(_v)
-            while (cur.valid) {
-                dfs(cur.value, _v)
-                cur = g.nextOutEdge(cur)
-            }
-        }
-    }
-    */
-
     private[this] def link(v: Int, w: Int) {
         ancestor.put(w, v)
     }
