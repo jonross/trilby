@@ -41,7 +41,6 @@ import trilby.util.BitSet
 class Dominators3(val g: IntGraph) {
 
     var buffers: List[ByteBuffer] = Nil
-    var dmax = 0
     val PAR = 64
     
     private[this] def getInts(size: Int) = {
@@ -51,23 +50,21 @@ class Dominators3(val g: IntGraph) {
     }
     
     val direct = new BitSet(g.maxNode + 1)
-    var nDirect = 0
-        
+    var directCount = 0
+    var nonDirectCount = 0
+    
     preDFS()
     
     val ord = getInts(g.maxNode + 1)
     val parent = getInts(g.maxNode + 1)
     val rev = getInts(g.maxNode + 1)
     
-    // dfs(1, 0)
     dfs()
     
-    printf("dmax = %d\n", dmax)
-    
-    val semi = getInts(dmax + 1)
-    val idom = getInts(dmax + 1)
-    val ancestor = getInts(dmax + 1)
-    val best = getInts(dmax + 1)
+    val semi = getInts(nonDirectCount + 1)
+    val idom = getInts(nonDirectCount + 1)
+    val ancestor = getInts(nonDirectCount + 1)
+    val best = getInts(nonDirectCount + 1)
     val buck = new IntLists(false)
     
     for (offset <- 1 to PAR par) {
@@ -81,17 +78,17 @@ class Dominators3(val g: IntGraph) {
     def init() {
 
         for (offset <- 1 to PAR par) {
-            for (v <- offset to dmax by PAR) {
+            for (v <- offset to nonDirectCount by PAR) {
                 semi.put(v, v)
                 idom.put(v, 0)
                 ancestor.put(v, 0);
                 best.put(v, v)
-                    printf("%d (ord %d) parent is %d (ord %d)\n",
-                           rev.get(v), v, rev.get(parent.get(v)), parent.get(v))
+                // printf("%d (ord %d) parent is %d (ord %d)\n",
+                //       rev.get(v), v, rev.get(parent.get(v)), parent.get(v))
             }
         }
 
-        for (w <- dmax until 1 by -1) {
+        for (w <- nonDirectCount until 1 by -1) {
             val p = parent.get(w)
 
             // step 2
@@ -104,6 +101,7 @@ class Dominators3(val g: IntGraph) {
                     if (semi.get(w) > semi_u)
                         semi.put(w, semi_u)
                     buck.add(semi.get(w), w)
+                        printf("add %d to %d\n", w, semi.get(w))
                     link(p, w)
                 }
                 cur = g.nextInEdge(cur)
@@ -122,7 +120,7 @@ class Dominators3(val g: IntGraph) {
 
         // step 4
         idom.put(1, 0)
-        for (w <- 2 to dmax) {
+        for (w <- 2 to nonDirectCount) {
             if (idom.get(w) != semi.get(w)) {
                 idom.put(w, idom.get(idom.get(w)))
             }
@@ -132,17 +130,17 @@ class Dominators3(val g: IntGraph) {
     def get() = {
         val d = new HugeArray.OfInt(g.maxNode + 1)
         for (offset <- 1 to PAR par) {
-            for (v <- (offset+1) to dmax by PAR) {
+            for (v <- (offset+1) to nonDirectCount by PAR) {
                 d(rev.get(v)) = rev.get(idom.get(v))
-                printf("%d dominates %d\n", d(rev.get(v)), rev.get(v))
+                // printf("%d dominates %d\n", d(rev.get(v)), rev.get(v))
             }
             for (v <- offset to g.maxNode by PAR) {
                 if (direct(v)) {
                     d(v) = g.walkInEdges(v).value
-                    printf("%d dominates %d\n", d(v), v)
+                    // printf("%d dominates %d\n", d(v), v)
                 }
                 else {
-                    printf("no dominator for %d\n", v)
+                    // printf("no dominator for %d\n", v)
                 }
             }
         }
@@ -163,66 +161,62 @@ class Dominators3(val g: IntGraph) {
             def addChildren(node: Int) {
                 var cur = g.walkOutEdges(node)
                 while (cur.valid) {
-                    val child = cur.value
-                    add(child)
+                    add(cur.value)
                     cur = g.nextOutEdge(cur)
                 }
             }
             def visit(node: Int) {
-                var cur = g.walkInEdges(node)
-                if (! cur.valid) {
-                    // printf("%d is not direct-dominated because in-degree == 0\n", node)
-                    dmax += 1
+                if (g.inDegree(node) != 1) {
+                    // printf("%d is not direct-dominated because in-degree != 1\n", node)
+                    nonDirectCount += 1
                     return
                 }
-                if (g.nextInEdge(cur).valid) {
-                    // printf("%d is not direct-dominated because in-degree > 1\n", node)
-                    dmax += 1
-                    return
-                }
-                cur = g.walkOutEdges(node)
+                var cur = g.walkOutEdges(node)
                 while (cur.valid) {
-                    val child = cur.value
-                    if (!direct(child)) {
-                        // printf("%d is not direct-dominated because %d is not\n", node, child)
-                        dmax += 1
+                    if (!direct(cur.value)) {
+                        // printf("%d is not direct-dominated because %d is not\n", node, cur.value)
+                        nonDirectCount += 1
                         return
                     }
                     cur = g.nextOutEdge(cur)
                 }
-                printf("%d is direct-dominated\n", node)
+                // printf("%d is direct-dominated\n", node)
                 direct.set(node)
-                nDirect += 1
+                directCount += 1
             }
             add(1)
         }.run()
     
+    // Ordering / parent-linking preparatory step for running Lengauer-Tarjan.
+    //    
     // For reasons TBD, this DFS creates a subtle difference in the resulting tree for
     // large graphs.  The DFS walks the child list in reverse order because of the way
     // CompactIntGraph edges are filled.  It should not matter to the results, but does.
     // To investigate.
     
     private def dfs() {
-        var num = 0
+        var ordIndex = 0
         var isDirect = false
         new PreorderDFS {
             def maxNode = g.maxNode
-            def visit(_v: Int) {
-                isDirect = direct(_v)
-                // get at parent by pushing it ahead of target node
-                val _p = stack.pop()
+            def visit(node: Int) {
+                isDirect = direct(node)
+                // see "get at parent" below
+                val nodeParent = stack.pop()
                 if (! isDirect) {
-                    num += 1
-                    val v = num
-                    ord.put(_v, v)
-                    parent.put(v, ord.get(_p))
+                    ordIndex += 1
+                    val nodeOrdinal = ordIndex
+                    ord.put(node, nodeOrdinal)
+                    // DFS ensures ord(parent) is already set
+                    parent.put(nodeOrdinal, ord.get(nodeParent))
                 }
             }
-            def addChildren(_v: Int) {
+            def addChildren(node: Int) {
                 if (! isDirect) {
-                    var cur = g.walkOutEdges(_v)
+                    var cur = g.walkOutEdges(node)
                     while (cur.valid) {
-                        add(_v, cur.value)
+                        // get at parent, above, by pushing it ahead of each child
+                        add(node, cur.value)
                         cur = g.nextOutEdge(cur)
                     }
                 }
@@ -232,24 +226,6 @@ class Dominators3(val g: IntGraph) {
         }.run()
     }
     
-    /* prior, blows up the stack
-    private def dfs(_v: Int, _p: Int) {
-        if (ord.get(_v) == 0) {
-            printf("visit %d parent %d\n", _v, _p)
-            val v = num
-            num += 1
-            ord.put(_v, v)
-            rev.put(v, _v)
-            parent.put(v, ord.get(_p))
-            var cur = g.walkOutEdges(_v)
-            while (cur.valid) {
-                dfs(cur.value, _v)
-                cur = g.nextOutEdge(cur)
-            }
-        }
-    }
-    */
-
     private[this] def link(v: Int, w: Int) {
         ancestor.put(w, v)
     }
@@ -271,5 +247,4 @@ class Dominators3(val g: IntGraph) {
             best.put(v, best.get(a))
         ancestor.put(v, ancestor.get(a))
     }
-
 }
