@@ -301,6 +301,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         
         val m = maxId
         _maxId = () => m
+        // objectIdMap.printStats()
         objectIdMap = null
         
         time("Building object graph") {

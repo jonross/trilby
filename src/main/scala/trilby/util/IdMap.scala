@@ -25,6 +25,7 @@ package trilby.util
 import gnu.trove.map.hash.TShortIntHashMap
 import trilby.util.Oddments._
 import java.util.ArrayList
+import scala.collection.JavaConversions._ 
 
 /**
  * Maps long identifiers to integer identifiers as they are encountered in the
@@ -33,7 +34,6 @@ import java.util.ArrayList
 
 class IdMap
 {
-    private[this] val maps = new Array[TShortIntHashMap](1 << 24)
     private[this] val segments = new ArrayList[IdSegment]
     private[this] var indexBase = -1
     private[this] var prevSlot = 0
@@ -92,6 +92,11 @@ class IdMap
     }
     
     def maxId = nextId - 1
+    
+    def printStats() =
+        for (seg <- segments if seg != null) {
+            printf("seg of size %d\n", seg.size)
+        }
 }
 
 class IdSegment
@@ -101,12 +106,12 @@ class IdSegment
     // tested.
     //
     // Note this will change dramatically if the ID compression factor changes,
-    // as it did when ID compression was first added.
+    // as it did when ID compression was added then removed again.
     
-    private[this] val INITIAL_CAPACITY = 6000
+    private[this] val INITIAL_CAPACITY = 1100
     
     // Likewise, 0.7 appears no slower than 0.5 for maps of these sizes and data values,
-    // and saves a boatload of memory.
+    // and saves a good deal of memory.
     
     private[this] val LOAD_FACTOR = 0.7f
 
@@ -115,4 +120,6 @@ class IdSegment
     def update(key: Short, id: Int) = map.put(key, id)
     
     def apply(key: Short) = map.get(key)
+    
+    def size = map.size
 }
