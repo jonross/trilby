@@ -26,20 +26,21 @@ import trilby.util.IdMap
 import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory
 import trilby.nonheap.HugeAutoArray
+import trilby.util.Oddments.Options
 
 /**
  * Accumulates raw information about object references and generates
  * {@link ObjectGraph}, above.
  */
 
-class ObjectGraphBuilder {
+class ObjectGraphBuilder(options: Options) {
     
     /** Synthetic object IDs at source of each edge */
-    private[this] val refsFrom = new HugeAutoArray.OfInt(false)
+    private[this] val refsFrom = new HugeAutoArray.OfInt(options.onHeap)
     
     /** Heap object IDs at destination of each edge, up to 5 bytes of data */
-    private[this] val refsToLo4 = new HugeAutoArray.OfInt(false) 
-    private[this] val refsToHi1 = new HugeAutoArray.OfByte(false) 
+    private[this] val refsToLo4 = new HugeAutoArray.OfInt(options.onHeap) 
+    private[this] val refsToHi1 = new HugeAutoArray.OfByte(options.onHeap) 
     
     /** # of unmappable references encountered */
     private var _numDead = 0

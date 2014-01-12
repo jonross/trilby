@@ -42,7 +42,7 @@ import trilby.graph.Dominators3
 import trilby.graph.DominatorsOG
 import trilby.graph.CompactIntGraph
 
-class Heap(options: Options, val idSize: Int, val fileDate: Date) 
+class Heap(val options: Options, val idSize: Int, val fileDate: Date) 
     extends SizeData with GCRootData with SkipSet {
     
     def heap = this
@@ -51,7 +51,7 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     val longIds = idSize == 1
     
     /** Subcontract out class information */
-    val classes = new ClassInfo()
+    val classes = new ClassInfo(options)
     
     /** Histogram display threshold, in total bytes */
     var threshold = 1024L
@@ -66,13 +66,13 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
     private[this] var objectIdMap = new IdMap()
     
     /** Static references get special treatment after heap is read */
-    private[this] var staticRefs = new HugeAutoArray.OfLong(false)
+    private[this] var staticRefs = new HugeAutoArray.OfLong(options.onHeap)
     
     /** Determines max synthetic object ID known; optimized form is used later on */
     private[this] var _maxId = () => objectIdMap.maxId
 
     /** Temporary object, records references as the heap is read */
-    private[hprof] var graphBuilder = new ObjectGraphBuilder()
+    private[hprof] var graphBuilder = new ObjectGraphBuilder(options)
 
     /** After heap read, {@link #graphBuilder} builds this */
     private[this] var graph: CompactIntGraph = null
@@ -318,12 +318,12 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
         if (options.dominators) {
             time("Finding dominators") {
                 if (useV3) {
-                    val dom = new Dominators3(graph)
+                    val dom = new Dominators3(graph, options.onHeap)
                     nDirect = dom.nDirect
                     domTree = dom.graph
                 }
                 else {
-                    val(n, dom) = DominatorsOG(graph, 1, false)
+                    val(n, dom) = DominatorsOG(graph, 1, options.onHeap)
                     nDirect = n
                     domTree = dom
                 }
@@ -377,8 +377,10 @@ class Heap(options: Options, val idSize: Int, val fileDate: Date)
 
 trait SizeData {
     
+    def options: Options
+    
      /** Temporary object, records object sizes as the heap is read */
-    private[this] var initialSizes = new HugeAutoArray.OfInt(false)
+    private[this] var initialSizes = new HugeAutoArray.OfInt(options.onHeap)
     
     /** After heap read, {@link #initialSizes} is optimized to this */
     private[this] var finalSizes: SmallCounts = null

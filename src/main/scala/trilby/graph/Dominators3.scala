@@ -40,7 +40,7 @@ import trilby.util.BitSet
  * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.56.8903
  */
 
-class Dominators3(val g: IntGraph) {
+class Dominators3(val g: IntGraph, onHeap: Boolean) {
 
     private[this] var buffers: List[ByteBuffer] = Nil
     private[this] val PAR = 64
@@ -67,7 +67,7 @@ class Dominators3(val g: IntGraph) {
     private[this] val idom = getInts(nonDirectCount + 1)
     private[this] val ancestor = getInts(nonDirectCount + 1)
     private[this] val best = getInts(nonDirectCount + 1)
-    private[this] val buck = new IntLists(false)
+    private[this] val buck = new IntLists(onHeap)
     
     for (offset <- 1 to PAR par) {
         for (v <- offset to g.maxNode by PAR) {
@@ -134,7 +134,7 @@ class Dominators3(val g: IntGraph) {
     def nDirect = directCount
     
     def get() = {
-        val d = new HugeArray.OfInt(g.maxNode + 1)
+        val d = new HugeArray.OfInt(g.maxNode + 1, onHeap)
         for (offset <- 1 to PAR par) {
             for (v <- (offset+1) to nonDirectCount by PAR) {
                 d(rev.get(v)) = rev.get(idom.get(v))

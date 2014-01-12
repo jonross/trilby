@@ -40,6 +40,7 @@ object Oddments {
                        val interactive: Boolean = true,
                        val jline: Boolean = false,
                        val logLevel: Level = Level.WARN,
+                       val onHeap: Boolean = true,
                        val textDump: Boolean = false,
                        // val web: Boolean = false,
                        val heapFile: File = null) {
@@ -50,6 +51,7 @@ object Oddments {
             case "--info" :: _ => copy(logLevel = Level.INFO) parse options.tail
             case "--jline" :: _ => copy(jline = true) parse options.tail
             case "--nodom" :: _ => copy(dominators = false) parse options.tail
+            case "--offheap" :: _ => copy(onHeap = false) parse options.tail
             case "--textdump" :: _ => copy(textDump = true, interactive = false) parse options.tail
             // case "--web" :: _ => copy(web = true) parse options.tail
             case x :: _ if x(0) == '-' => die("Unknown option: " + x)

@@ -2,10 +2,10 @@ package trilby.test
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.MustMatchers._
-
 import trilby.hprof.ClassInfo
 import trilby.hprof.Field
 import trilby.util.BitSet
+import trilby.util.Oddments.Options
     
 class TestDefs extends FunSuite {
     
@@ -26,7 +26,7 @@ class TestDefs extends FunSuite {
     }
         
     private def defs = {
-        val ci = new ClassInfo()
+        val ci = new ClassInfo(Options())
         for ((name, hid, superHid) <- List(
             ("java.lang.Object", 1, 0),
             ("java.lang.String", 2, 1),

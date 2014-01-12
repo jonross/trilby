@@ -52,7 +52,7 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
     var count = 0
     
     // Track skipped objects
-    val skipped = new HugeArray.OfInt(heap.maxId + 1)
+    val skipped = new HugeArray.OfInt(heap.maxId + 1, heap.options.onHeap)
         
     private[this] val log = LoggerFactory.getLogger(getClass)
     

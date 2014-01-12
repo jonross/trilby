@@ -37,7 +37,7 @@ import trilby.util.Oddments._
  * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.56.8903
  */
 
-class Dominators(val g: IntGraph) {
+class Dominators(val g: IntGraph, onHeap: Boolean) {
 
     var buffers: List[ByteBuffer] = Nil
     var dmax = 0
@@ -60,7 +60,7 @@ class Dominators(val g: IntGraph) {
     val idom = getInts(dmax + 1)
     val ancestor = getInts(dmax + 1)
     val best = getInts(dmax + 1)
-    val buck = new IntLists(false)
+    val buck = new IntLists(onHeap)
     
     init()
     
@@ -115,7 +115,7 @@ class Dominators(val g: IntGraph) {
     }
 
     def get() = {
-        val d = new HugeArray.OfInt(g.maxNode + 1)
+        val d = new HugeArray.OfInt(g.maxNode + 1, onHeap)
         for (offset <- 1 to PAR par) {
             for (v <- (offset+1) to dmax by PAR) {
                 d(rev.get(v)) = rev.get(idom.get(v))

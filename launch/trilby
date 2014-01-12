@@ -22,6 +22,10 @@ run_what=trilby
 use_jline=--jline
 
 while true; do case "$1" in
+    --dumpoome)
+        JAVA_OPTS+=" -XX:+HeapDumpOnOutOfMemoryError"
+        shift
+        ;;
     --genheap)
         run_what=gen_heap
         shift
@@ -31,12 +35,12 @@ while true; do case "$1" in
         shift
         ;;
     --g1)
-        JAVA_OPTS+=" -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC"
+        JAVA_OPTS+=" -XX:+UseG1GC"
         gc_details=false
         need_gc=false
         shift
         ;;
-    --gc)
+    --gc|--verbosegc)
         verbose_gc=true
         shift
         ;;

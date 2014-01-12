@@ -153,7 +153,7 @@ class TestGraphs extends FunSuite {
         if (doms == null)
             return;
         
-        val d = new Dominators3(g)
+        val d = new Dominators3(g, true)
         var idom = d.get()
         for (i <- 1 until doms.length) {
             assert(doms(i) === idom(i))

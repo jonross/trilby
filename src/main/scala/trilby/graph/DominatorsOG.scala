@@ -82,8 +82,8 @@ object DominatorsOG {
         // Create mapping from non-simply-dominated in g to h, and back.
         // The master root in g is node 1 in h.
         
-        val g2h = new HugeArray.OfInt(g.maxNode + 1)
-        val h2g = new HugeArray.OfInt(g.maxNode + 1 - nSimply)
+        val g2h = new HugeArray.OfInt(g.maxNode + 1, onHeap)
+        val h2g = new HugeArray.OfInt(g.maxNode + 1 - nSimply, onHeap)
         
         g2h(root) = 1
         h2g(1) = root
@@ -119,7 +119,7 @@ object DominatorsOG {
         }
         
         val h = new CompactIntGraph(hv - 1, edges, onHeap)
-        val doms = new Dominators(h).get
+        val doms = new Dominators(h, onHeap).get
         h.free()
         
         // Create dominator tree; add dominance from reduced graph,

@@ -49,8 +49,8 @@ object Main {
     
     def main(args: Array[String]) = protect {
         time("Session") {
-            val options = Options().parse(args.toList)
             PropertyConfigurator.configure(getClass.getResourceAsStream("log4j.properties"))
+            val options = Options().parse(args.toList)
             Logger.getRootLogger.setLevel(options.logLevel)
             NHUtils.initNow()
             run(options)

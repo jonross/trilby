@@ -32,7 +32,7 @@ import scala.collection.mutable.ArrayBuffer
 import trilby.nonheap.HugeAutoArray
 import trilby.util.BitSet
 
-class ClassInfo {
+class ClassInfo(options: Options) {
 
     /** Maps demangled class names to ClassDefs */
     private[this] val byName = new HashMap[String,ClassDef](100000)
@@ -44,7 +44,7 @@ class ClassInfo {
     private[this] val byClassId = new TIntObjectHashMap[ClassDef](100000)
     
     /** Maps synthetic object IDs to class IDs */
-    private[this] val objectMap = new HugeAutoArray.OfInt(false)
+    private[this] val objectMap = new HugeAutoArray.OfInt(options.onHeap)
     
     /** Class ID for next ClassDef we create. */
     private[this] var maxClassId = 0

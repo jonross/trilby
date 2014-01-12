@@ -28,7 +28,6 @@ import trilby.util._
 import trilby.util.Oddments._
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import trilby.nonheap.HugeAutoArray
 
 class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
     
@@ -276,60 +275,5 @@ class SegmentReader (heap: Heap, data: MappedHeapData, length: Long) {
             if (count > 0)
                 data.skip(count * jtype.size)
         }
-    }
-}
-
-sealed class ReferenceBag
-{
-    private val from = new HugeAutoArray.OfInt(false)
-    private val to = new HugeAutoArray.OfLong(false)
-    
-    def add(fromOid: Int, toHid: Long) {
-        from.add(fromOid)
-        to.add(toHid)
-    }
-    
-    def ids = (from, to)
-    
-    def size = from.size
-    
-    // release off-heap memory
-    
-    def free() {
-        from.free()
-        to.free()
-    }
-}
-
-object ReferenceBag
-{
-    def merge(bags: Seq[ReferenceBag], resolver: Long => Int) = {
-        
-        val count = bags.map(_.size).sum
-        val from = new HugeAutoArray.OfInt(false)
-        val to = new HugeAutoArray.OfLong(false)
-        from.set(count, 0)
-        to.set(count, 0)
-        
-        var base = 0
-        def copy(i: Int, bagFrom: HugeAutoArray.OfInt, bagTo: HugeAutoArray.OfLong) {
-            var (j, k) = (i, 0)
-            var size = bagFrom.size
-            while (k < size) {
-                from.set(j, bagFrom.get(k))
-                to.set(j, resolver(bagTo.get(k)))
-                j += 1
-                k += 1
-            }
-        }
-        
-        bags map { bag =>
-            val f = future { copy(base, bag.from, bag.to) }
-            base += bag.size
-            f
-        } foreach { x => }
-        
-        bags.foreach(_.free)
-        (from, to)
     }
 }

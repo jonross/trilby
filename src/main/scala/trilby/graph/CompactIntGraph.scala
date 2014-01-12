@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.util.Failure
-import trilby.nonheap.HugeAutoArray
 import trilby.util.Oddments._
 import scala.concurrent.duration.Duration
 import trilby.nonheap.HugeArray
@@ -79,10 +78,10 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         private[this] var edges: HugeArray.OfInt = null
         
         /** Temporary count of vertex degree */
-        var degrees = new HugeArray.OfInt(maxId + 1)
+        var degrees = new HugeArray.OfInt(maxId + 1, onHeap)
         
         /** For a vertex V, the offset into edges where its list begins */
-        private[this] val offsets = new HugeArray.OfInt(maxId + 1)
+        private[this] val offsets = new HugeArray.OfInt(maxId + 1, onHeap)
             
         def free() {
             boundaries = null
@@ -92,7 +91,7 @@ class CompactIntGraph(maxId: Int, f: ((Int, Int) => Unit) => Unit, onHeap: Boole
         
         def fill(numEdges: Int) {
             
-            edges = new HugeArray.OfInt(numEdges + 1)
+            edges = new HugeArray.OfInt(numEdges + 1, onHeap)
             boundaries = new BitSet(numEdges + 1)
             log.info("Finding edge offsets")
             var nextOffset = 1
