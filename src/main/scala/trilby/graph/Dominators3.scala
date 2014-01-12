@@ -32,7 +32,9 @@ import trilby.util.BitSet
 /**
  * Off-heap implementation of Lengauer-Tarjan for dominators in an {@link IntGraph}.
  * Based on their paper and also "Computing Dominators and Dominance Frontiers" by 
- * Briggs / Harvey.
+ * Briggs / Harvey.  Also pre-filters leaf trees where we can easily pre-determine
+ * parent(v) == dom(v), eliminating about 50% of vertices in graphs sampled (we term 
+ * this "direct dominated".)
  * 
  * http://www.cc.gatech.edu/~harrold/6340/cs6340_fall2010/Readings/lengauer91jul.pdf
  * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.56.8903

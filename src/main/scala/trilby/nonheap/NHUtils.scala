@@ -8,6 +8,10 @@ import ExecutionContext.Implicits.global
 
 object NHUtils {
     
+    // Method from
+    // http://stackoverflow.com/questions/1854398/how-to-garbage-collect-a-direct-buffer-java
+    // This of course is Sun-specific, for now.
+        
     lazy val(cleanerMethod, cleanMethod) = {
         try {
             val buf = ByteBuffer.allocateDirect(1024)
@@ -31,10 +35,6 @@ object NHUtils {
     def alloc(nBytes: Int, onHeap: Boolean) =
         if (onHeap) ByteBuffer.allocate(nBytes) else ByteBuffer.allocateDirect(nBytes)
     
-    // Method from
-    // http://stackoverflow.com/questions/1854398/how-to-garbage-collect-a-direct-buffer-java
-    // This of course is Sun-specific, for now.
-        
     def free(buf: ByteBuffer) {
         try {
             cleanMethod.invoke(cleanerMethod.invoke(buf))
