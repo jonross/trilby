@@ -28,6 +28,7 @@ import trilby.nonheap.NHUtils
 import trilby.nonheap.HugeArray
 import trilby.util.Oddments._
 import trilby.util.BitSet
+import trilby.util.IntStack
 
 /**
  * Off-heap implementation of Lengauer-Tarjan for dominators in an {@link IntGraph}.
@@ -75,6 +76,9 @@ class Dominators3(val g: IntGraph, onHeap: Boolean) {
         }
     }
                 
+    private[this] val sa = new IntStack()
+    private[this] val sv = new IntStack()
+    
     init()
     
     def init() {
@@ -258,19 +262,43 @@ class Dominators3(val g: IntGraph, onHeap: Boolean) {
 
     private[this] def eval(v: Int) = {
         if (ancestor.get(v) != 0) {
-            compress(v)
+            compressNS(v)
         }
         best.get(v)
     }
 
-    private[this] def compress(v: Int) {
-        val a = ancestor.get(v)
-        if (ancestor.get(a) == 0) {
-            return
+    private[this] def compressNS(_v: Int) {
+        var v = _v
+        var a = 0
+        while(true) {
+            a = ancestor.get(v)
+            if (ancestor.get(a) != 0) {
+                // recurse
+                sa.push(a)
+                sv.push(v)
+                v = a
+            }
+            else if (sa.size > 0) {
+                // return from recursive call
+                a = sa.pop()
+                v = sv.pop()
+                if (semi.get(best.get(v)) > semi.get(best.get(a)))
+                    best.put(v, best.get(a))
+                ancestor.put(v, ancestor.get(a))
+            }
+            else {
+                return
+            }
         }
-        compress(a)
-        if (semi.get(best.get(v)) > semi.get(best.get(a)))
-            best.put(v, best.get(a))
-        ancestor.put(v, ancestor.get(a))
+    }
+    
+    private[this] def compress(v: Int) {  // blows the stack
+        val a = ancestor.get(v)
+        if (ancestor.get(a) != 0) {
+            compress(a)
+            if (semi.get(best.get(v)) > semi.get(best.get(a)))
+                best.put(v, best.get(a))
+            ancestor.put(v, ancestor.get(a))
+        }
     }
 }

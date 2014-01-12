@@ -34,6 +34,10 @@ while true; do case "$1" in
         JAVA_OPTS+=" -agentlib:hprof=cpu=samples,depth=35,interval=5"
         shift
         ;;
+    --jprofiler)
+        JAVA_OPTS+=" -agentpath:/opt/jprofiler7/bin/linux-x64/libjprofilerti.so=port=8849"
+        shift
+        ;;
     --g1)
         JAVA_OPTS+=" -XX:+UseG1GC"
         gc_details=false
