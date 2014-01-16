@@ -40,8 +40,13 @@ import trilby.util.BitSet
 class ClassHistogram (heap: Heap, showIds: Boolean = false) 
     extends QueryFunction with Printable
 {
-    class Counts(val classDef: ClassDef, var count: Int = 0, var nbytes: Long = 0L) { }
+    class Counts(val classDef: ClassDef, 
+                 var count: Int = 0, 
+                 var nbytes: Long = 0L,
+                 var retained: Long = 0) { }
+    
     val counts = new Array[Counts](heap.classes.numClasses + 1)
+    private[this] val doRetained = heap.options.dominators
 
     def map[T](fn: Counts => T) =
         for (c <- counts if c != null) yield fn(c)
@@ -52,18 +57,21 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
     
     type T = ClassHistogram
         
-    def add(id: Int, classDef: ClassDef, info: Long) {
+    def add(id: Int, classDef: ClassDef) {
         var slot = counts(classDef.classId)
         if (slot == null) {
             slot = new Counts(classDef)
             counts(classDef.classId) = slot
         }
         slot.count += 1
-        slot.nbytes += info
+        slot.nbytes += heap.getObjectSize(id)
+        if (doRetained) {
+            slot.retained += heap.getRetainedSize(id)
+        }
     }
     
     def accept(ids: Array[Int]) = if (!knownIds(ids(1))) {
-        add(ids(1), heap.classes.getForObjectId(ids(0)), heap.getObjectSize(ids(1)))
+        add(ids(1), heap.classes.getForObjectId(ids(0)))
         knownIds.set(ids(1))
     }
         
@@ -83,10 +91,10 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
         
         for (slot <- slots if slot.nbytes >= heap.threshold) {
             if (showIds)
-                out.write("%7d %10d %10d %s\n".format(slot.classDef.classId, 
-                    slot.count, slot.nbytes, slot.classDef.name))
+                out.write("%7d %10d %10d %10d %s\n".format(slot.classDef.classId, 
+                    slot.count, slot.nbytes, slot.retained, slot.classDef.name))
             else
-                out.write("%10d %10d %s\n".format(slot.count, slot.nbytes, slot.classDef.name))
+                out.write("%10d %10d %10d %s\n".format(slot.count, slot.nbytes, slot.retained, slot.classDef.name))
             totalCount += slot.count
             totalBytes += slot.nbytes
         }

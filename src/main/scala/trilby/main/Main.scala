@@ -102,8 +102,10 @@ object Main {
         else if (options.histogram) {
             val report = new ClassHistogram(heap, false)
             for (id <- 1 to heap.maxId) {
-                val classDef = heap.classes.getForObjectId(id)
-                report.add(id, classDef, heap.getObjectSize(id))
+                if (heap.canUse(id)) {
+                    val classDef = heap.classes.getForObjectId(id)
+                    report.add(id, classDef)
+                }
             }
             val pw = new PrintWriter(System.out)
             report.print(pw)

@@ -18,6 +18,8 @@ object HugeArray {
         def update(index: Int, value: Long) = buf.putLong(index * 8, value)
         @inline
         def apply(index: Int) = buf.getLong(index * 8)
+        @inline
+        def adjust(index: Int, delta: Long) = buf.putLong(index * 8, delta + buf.getLong(index * 8))
     }
 
 }

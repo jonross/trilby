@@ -35,6 +35,7 @@ import gnu.trove.map.hash.TIntByteHashMap
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import trilby.nonheap.HugeAutoArray
+import trilby.nonheap.HugeArray
 import trilby.util.SmallCounts
 import trilby.util.BitSet
 import trilby.graph.Dominators
@@ -328,6 +329,9 @@ class Heap(val options: Options, val idSize: Int, val fileDate: Date)
                     domTree = dom
                 }
             }
+            time("Calculating retained sizes") {
+                calculateRetainedSizes(domTree)
+            }
         }
         
         // Correct count for master root references
@@ -378,12 +382,15 @@ class Heap(val options: Options, val idSize: Int, val fileDate: Date)
 trait SizeData {
     
     def options: Options
+    def heap: Heap
     
      /** Temporary object, records object sizes as the heap is read */
     private[this] var initialSizes = new HugeAutoArray.OfInt(options.onHeap)
     
     /** After heap read, {@link #initialSizes} is optimized to this */
     private[this] var finalSizes: SmallCounts = null
+    
+    private[this] var retainedSizes: HugeArray.OfLong = null
        
     def setObjectSize(oid: Int, size: Int) =
         initialSizes.set(oid, size)
@@ -391,17 +398,41 @@ trait SizeData {
     def getObjectSize(id: Int) = 
         finalSizes.get(id)
         
+    def getRetainedSize(id: Int) =
+        retainedSizes(id)
+        
     def optimizeSizes(maxId: Int) {
-        
         // Sizes can be compressed as most fit in two bytes.
-        
         finalSizes = new SmallCounts(maxId + 1, 0.01f)
         for (oid <- 1 to maxId)
             finalSizes.adjust(oid, initialSizes.get(oid))
-        
         initialSizes.free()
         initialSizes = null
-        
+    }
+    
+    def calculateRetainedSizes(dg: CompactIntGraph) {
+        retainedSizes = new HugeArray.OfLong(heap.maxId + 1, options.onHeap)
+        new PostorderDFS {
+            private[this] val r = retainedSizes
+            def maxNode = dg.maxNode
+            def addChildren(node: Int) {
+                var cur = dg.walkOutEdges(node)
+                while (cur.valid) {
+                    add(cur.value)
+                    cur = dg.nextOutEdge(cur)
+                }
+            }
+            def visit(node: Int) {
+                if (node != 1) {
+                    if (dg.outDegree(node) == 0) {
+                        r(node) = heap.getObjectSize(node)
+                    }
+                    val parent = dg.walkInEdges(node).value
+                    r.adjust(parent, r(node))
+                }
+            }
+            add(1)
+        }.run()
     }
 }
 
@@ -414,7 +445,7 @@ trait GCRootData {
     private[this] var liveObjects: BitSet = null
     
     /** Hide unreachable objects in analyses */
-    var hideGarbage = true // leave off until fully debugged
+    var hideGarbage = true
     
     def addGCRoot(id: Long, desc: String) {
         heap.addReference(1, id)
