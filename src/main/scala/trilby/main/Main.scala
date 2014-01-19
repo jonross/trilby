@@ -42,6 +42,7 @@ import com.google.common.io.ByteStreams
 import trilby.nonheap.NHUtils
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
+import trilby.query.ParseException
 
 object Main {
     
@@ -73,12 +74,22 @@ object Main {
             val input = Stream continually { readLine() }
             for (line <- input takeWhile {_ != null} map {_.trim} filter {_.length > 0}) {
                 protect { 
-                    new CommandParser(heap).parseCommand(line).apply() match {
-                        case p: Printable =>
-                            val out = new java.io.PrintWriter(System.out)
-                            p.print(out)
-                            out.flush()
-                        case x: Unit =>
+                    try {
+                        new CommandParser(heap).parseCommand(line).apply() match {
+                            case p: Printable =>
+                                val out = new java.io.PrintWriter(System.out)
+                                p.print(out)
+                                out.flush()
+                            case x: Unit =>
+                        }
+                    }
+                    catch {
+                        case e: ParseException =>
+                            System.err.println(e.getMessage + "\nPlease see " +
+                                "https://github.com/jonross/trilby/wiki/Reference" +
+                                " for a command summary.")
+                        case e: Exception =>
+                            e.printStackTrace(System.err)
                     }
                 }
             }

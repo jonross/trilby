@@ -29,10 +29,15 @@ import trilby.hprof.Heap
 
 class CommandParser(heap: Heap) extends RegexParsers
 {
-    // matches e.g. "java.lang.Object", "int[][]", "com.foo.*"
+    // matches e.g. "java.lang.Object", "int[][]", "com.foo.*" -- no longer used
 
-    def types: Parser[String] = 
+    def typesOld: Parser[String] = 
         """[A-Za-z_][A-Za-z0-9$_]*(\.[A-Za-z_*][A-Za-z0-9$_]*)*(\[\])*""".r
+
+    // matches RE chars for type name
+        
+    def types: Parser[String] = 
+        """[-\[\]A-Za-z0-9*_\\+().^$]+""".r
 
     // matches a query variable name (same as java identifiers)
 
@@ -100,8 +105,8 @@ class CommandParser(heap: Heap) extends RegexParsers
         miscfn ^^     { case x => x }
 
     def parseCommand(text : String) = parseAll(action, text) match {
-        case Error(msg, next) => sys.error(msg)
-        case Failure(msg, next) => sys.error(msg)
+        case Error(msg, next) => throw new ParseException(msg)
+        case Failure(msg, next) => throw new ParseException(msg)
         case p: ParseResult[() => Any] => p.get
     }
     
@@ -114,3 +119,5 @@ class CommandParser(heap: Heap) extends RegexParsers
         }
     }
 }
+
+class ParseException(message: String) extends RuntimeException(message)
