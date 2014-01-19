@@ -31,6 +31,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import trilby.nonheap.HugeAutoArray
 import trilby.util.BitSet
+import java.util.regex.Pattern
 
 class ClassInfo(options: Options) {
 
@@ -144,8 +145,7 @@ class ClassInfo(options: Options) {
     
     /**
      * Modify a bit set to include / exclude classes whose IDs match the
-     * match class(es) + superclasses.  Wildcards may suffix the name e.g
-     * <code>"java.util.*"</code>.
+     * match class(es) + superclasses.
      */
     
     def matchClasses(bits: BitSet, name: String, include: Boolean) = {
@@ -163,17 +163,15 @@ class ClassInfo(options: Options) {
             c.subclasses.map(mark(_))
         }
         
-        if (name.endsWith(".*")) {
-            val prefix = name.dropRight(1)
-            for (c <- byName.values) {
-                if (c.name.startsWith(prefix)) {
-                    mark(c)
-                }
-            }
+        val array = "(.*?)((\\[|\\])+)".r
+        val name2 = name match {
+            case array(a, b, _) => a + b.replace("[", "\\[").replace("]", "\\]")
+            case _ => name
         }
-        else {
-            val c = byName.get(name)
-            if (c != null) {
+        
+        val pattern = Pattern.compile(name2)
+        for (c <- byName.values) {
+            if (pattern.matcher(c.name).matches()) {
                 mark(c)
             }
         }
