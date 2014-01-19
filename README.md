@@ -1,2 +1,2 @@
-Please see the [wiki].
+Please see the [wiki](wiki).
 
