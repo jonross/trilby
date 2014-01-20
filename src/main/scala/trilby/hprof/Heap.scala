@@ -469,7 +469,7 @@ trait GCRootData {
     }
     
     def canUse(oid: Int) =
-        oid != 1 && (! heap.hideGarbage || liveObjects(oid))
+        ! heap.hideGarbage || liveObjects(oid)
 }
 
 trait SkipSet {

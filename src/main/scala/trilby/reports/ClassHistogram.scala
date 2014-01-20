@@ -37,7 +37,7 @@ import trilby.util.BitSet
  * the total byte count per class.
  */
 
-class ClassHistogram (heap: Heap, showIds: Boolean = false) 
+class ClassHistogram (heap: Heap) 
     extends QueryFunction with Printable
 {
     class Counts(val classDef: ClassDef, 
@@ -86,23 +86,26 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
             _.nbytes >= 0 // was 1024; put back?
         }
         
-        var totalCount = 0
-        var totalBytes = 0L
+        val total = new Counts(null)
+        val hidden = new Counts(null)
         
-        for (slot <- slots if slot.nbytes >= heap.threshold) {
-            if (showIds)
-                out.write("%7d %10d %10d %10d %s\n".format(slot.classDef.classId, 
-                    slot.count, slot.nbytes, slot.retained, slot.classDef.name))
-            else
+        for (slot <- slots) {
+            if (slot.nbytes < heap.threshold) {
+                hidden.count += slot.count
+                hidden.nbytes += slot.nbytes
+            }
+            else {
                 out.write("%10d %10d %10d %s\n".format(slot.count, slot.nbytes, slot.retained, slot.classDef.name))
-            totalCount += slot.count
-            totalBytes += slot.nbytes
+                total.count += slot.count
+                total.nbytes += slot.nbytes
+            }
         }
         
-        if (showIds)
-            out.write("%7s %10d %10d total\n".format("", totalCount, totalBytes))
-        else
-            out.write("%10d %10d total\n".format(totalCount, totalBytes))
+        if (hidden.count > 0) {
+            out.write("%10d %10d %10s %s\n".format(hidden.count, hidden.nbytes, "", "(below threshold)"))
+        }
+        
+        out.write("%10d %10d total\n".format(total.count, total.nbytes))
     }
 
 }
