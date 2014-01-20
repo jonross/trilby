@@ -27,6 +27,7 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
 import trilby.hprof.Heap
 import trilby.query.QueryFunction
+import trilby.query.{NoLimit, MaxCount, MaxBytes, MaxRetained}
 import trilby.util.Oddments.Printable
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
@@ -89,8 +90,15 @@ class ClassHistogram (heap: Heap)
         val total = new Counts(null)
         val hidden = new Counts(null)
         
+        val hide = heap.threshold match {
+            case NoLimit =>             c: Counts => false
+            case MaxCount(count) =>     c: Counts => c.count < count
+            case MaxBytes(nbytes) =>    c: Counts => c.nbytes < nbytes
+            case MaxRetained(nbytes) => c: Counts => c.retained < nbytes
+        }
+        
         for (slot <- slots) {
-            if (slot.nbytes < heap.threshold) {
+            if (hide(slot)) {
                 hidden.count += slot.count
                 hidden.nbytes += slot.nbytes
             }

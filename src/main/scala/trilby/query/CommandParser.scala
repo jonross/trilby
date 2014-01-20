@@ -86,18 +86,45 @@ class CommandParser(heap: Heap) extends RegexParsers
             case f ~ _ ~ p => new GraphQuery(heap, f._1, f._2, p)
         }
     
+    // Matches histogram display thresholds
+    
+    def threshold =
+        "nothreshold" ^^ { 
+            case _ => NoLimit
+        } |
+        "threshold" ~ "[0-9]+".r ~ "objects" ^^ { 
+            case _ ~ expr ~ _ => MaxCount(expr.toInt)
+        } |
+        "threshold" ~ "[0-9]+[kKmMgG]?[bB]?".r ~ "bytes" ^^ { 
+            case _ ~ expr ~ _ => MaxBytes(parseSize(expr))
+        } |
+        "threshold" ~ "[0-9]+[kKmMgG]?[bB]?".r ~ "retained" ^^ { 
+            case _ ~ expr ~ _ => MaxRetained(parseSize(expr))
+        }
+    
     // Matches misc functions
     
     def miscfn =
-        
-        "skip" ~ types ^^   { case _ ~ t => () => heap.skipClasses(t, true) } |
-        "skip" ^^           { case _ => () => heap.showSkippedClasses() } |
-        "noskip" ~ types ^^ { case _ ~ t => () => heap.skipClasses(t, false) } |
-        "noskip" ^^         { case _ => () => heap.showSkippedClasses() } |
-        "set" ~ "garbage" ^^   { case _ => () => heap.hideGarbage = false } |
-        "set" ~ "nogarbage" ^^ { case _ => () => heap.hideGarbage = true } |
-        "set" ~ "threshold" ~ "[0-9]+[kKmMgG]?".r ^^ { 
-            case _ ~ _ ~ expr => () => heap.threshold = parseSize(expr)
+        "skip" ~ types ^^ { 
+            case _ ~ t => () => heap.skipClasses(t, true) 
+        } |
+        "skip" ^^ {
+            case _ => () => heap.showSkippedClasses() 
+        } |
+        "noskip" ~ types ^^ {
+            case _ ~ t => () => heap.skipClasses(t, false) 
+        } |
+        "noskip" ^^ {
+            case _ => () => heap.showSkippedClasses() 
+        } |
+        "set" ~ "garbage" ^^  {
+            case _ => () => heap.hideGarbage = false 
+        } |
+        "set" ~ "nogarbage" ^^ { 
+            case _ => () => heap.hideGarbage = true 
+        } |
+        "set" ~ threshold ^^ {
+            case _ ~ t => () => heap.threshold = t
         }
         
     def action: Parser[() => Any] =
@@ -111,7 +138,7 @@ class CommandParser(heap: Heap) extends RegexParsers
     }
     
     def parseSize(expr: String) = {
-        val re = "([0-9]+)([kKmMgG]?)".r
+        val re = "([0-9]+)([kKmMgG]?)[bB]?".r
         val multiplier = Map("" -> 1L, "k" -> (1L<<10), "m" -> (1L<<20), "g" -> (1L<<30))
         expr match {
             case re(num, suffix) =>

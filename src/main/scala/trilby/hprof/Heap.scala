@@ -42,6 +42,8 @@ import trilby.graph.Dominators
 import trilby.graph.Dominators3
 import trilby.graph.DominatorsOG
 import trilby.graph.CompactIntGraph
+import trilby.query.MaxBytes
+import trilby.query.Threshold
 
 class Heap(val options: Options, val idSize: Int, val fileDate: Date) 
     extends SizeData with GCRootData with SkipSet {
@@ -54,8 +56,8 @@ class Heap(val options: Options, val idSize: Int, val fileDate: Date)
     /** Subcontract out class information */
     val classes = new ClassInfo(options)
     
-    /** Histogram display threshold, in total bytes */
-    var threshold = 1024L
+    /** Histogram display threshold */
+    var threshold: Threshold = MaxBytes(1024)
     
     /** Maps heap IDs to UTF-8 strings (field names, class names etc.) */
     private[this] val heapNamesById = new TLongObjectHashMap[String](100000)
