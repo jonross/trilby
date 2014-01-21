@@ -27,6 +27,7 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
 import trilby.hprof.Heap
 import trilby.query.QueryFunction
+import trilby.query.{NoLimit, MaxCount, MaxBytes, MaxRetained}
 import trilby.util.Oddments.Printable
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
@@ -37,7 +38,7 @@ import trilby.util.BitSet
  * the total byte count per class.
  */
 
-class ClassHistogram (heap: Heap, showIds: Boolean = false) 
+class ClassHistogram (heap: Heap) 
     extends QueryFunction with Printable
 {
     class Counts(val classDef: ClassDef, 
@@ -77,32 +78,47 @@ class ClassHistogram (heap: Heap, showIds: Boolean = false)
         
     def print(out: PrintWriter) {
         
+        val diff = heap.threshold match {
+            case NoLimit =>             (a: Counts, b: Counts) => a.nbytes - b.nbytes
+            case MaxCount(count) =>     (a: Counts, b: Counts) => a.count.toLong - b.count.toLong
+            case MaxBytes(nbytes) =>    (a: Counts, b: Counts) => a.nbytes - b.nbytes
+            case MaxRetained(nbytes) => (a: Counts, b: Counts) => a.retained - b.retained
+        }
+        
         val slots = counts.toList filter {_ != null} sortWith { (a,b) =>
-            val delta = a.nbytes - b.nbytes
+            val delta = diff(a, b)
             if (delta > 0) true
             else if (delta < 0) false
             else a.classDef.name.compareTo(b.classDef.name) < 0
-        } filter {
-            _.nbytes >= 0 // was 1024; put back?
         }
         
-        var totalCount = 0
-        var totalBytes = 0L
+        val total = new Counts(null)
+        val hidden = new Counts(null)
         
-        for (slot <- slots if slot.nbytes >= heap.threshold) {
-            if (showIds)
-                out.write("%7d %10d %10d %10d %s\n".format(slot.classDef.classId, 
-                    slot.count, slot.nbytes, slot.retained, slot.classDef.name))
-            else
+        val hide = heap.threshold match {
+            case NoLimit =>             c: Counts => false
+            case MaxCount(count) =>     c: Counts => c.count < count
+            case MaxBytes(nbytes) =>    c: Counts => c.nbytes < nbytes
+            case MaxRetained(nbytes) => c: Counts => c.retained < nbytes
+        }
+        
+        for (slot <- slots) {
+            if (hide(slot)) {
+                hidden.count += slot.count
+                hidden.nbytes += slot.nbytes
+            }
+            else {
                 out.write("%10d %10d %10d %s\n".format(slot.count, slot.nbytes, slot.retained, slot.classDef.name))
-            totalCount += slot.count
-            totalBytes += slot.nbytes
+                total.count += slot.count
+                total.nbytes += slot.nbytes
+            }
         }
         
-        if (showIds)
-            out.write("%7s %10d %10d total\n".format("", totalCount, totalBytes))
-        else
-            out.write("%10d %10d total\n".format(totalCount, totalBytes))
+        if (hidden.count > 0) {
+            out.write("%10d %10d %10s %s\n".format(hidden.count, hidden.nbytes, "", "(below threshold)"))
+        }
+        
+        out.write("%10d %10d total\n".format(total.count, total.nbytes))
     }
 
 }
