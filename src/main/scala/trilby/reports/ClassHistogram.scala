@@ -78,13 +78,18 @@ class ClassHistogram (heap: Heap)
         
     def print(out: PrintWriter) {
         
+        val diff = heap.threshold match {
+            case NoLimit =>             (a: Counts, b: Counts) => a.nbytes - b.nbytes
+            case MaxCount(count) =>     (a: Counts, b: Counts) => a.count.toLong - b.count.toLong
+            case MaxBytes(nbytes) =>    (a: Counts, b: Counts) => a.nbytes - b.nbytes
+            case MaxRetained(nbytes) => (a: Counts, b: Counts) => a.retained - b.retained
+        }
+        
         val slots = counts.toList filter {_ != null} sortWith { (a,b) =>
-            val delta = a.nbytes - b.nbytes
+            val delta = diff(a, b)
             if (delta > 0) true
             else if (delta < 0) false
             else a.classDef.name.compareTo(b.classDef.name) < 0
-        } filter {
-            _.nbytes >= 0 // was 1024; put back?
         }
         
         val total = new Counts(null)
