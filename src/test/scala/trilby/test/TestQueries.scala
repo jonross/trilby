@@ -19,6 +19,7 @@ class TestQueries extends FunSuite {
         val h2 = histo("histo x, y of String y <<- trilby.util.MyHashMap x")
         assert(h2.counts(mapClass.classId) === null)
         query("skip java.util.*")
+        query("noskip trilby.util.MyHashMap")
         val h3 = histo("histo x, y of String y <<- trilby.util.MyHashMap x")
         var counts = h3.counts(mapClass.classId)
         assert(counts.count === BASE_COUNT)

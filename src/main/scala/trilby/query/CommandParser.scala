@@ -106,11 +106,14 @@ class CommandParser(heap: Heap) extends RegexParsers
     // Matches misc functions
     
     def miscfn =
+        "skip" ~ "list" ^^ { 
+            case _ => () => heap.showSkippedClasses()
+        } |
         "skip" ~ types ^^ { 
             case _ ~ t => () => heap.skipClasses(t, true) 
         } |
         "skip" ^^ {
-            case _ => () => heap.showSkippedClasses() 
+            case _ => () => heap.showSkipList() 
         } |
         "noskip" ~ types ^^ {
             case _ ~ t => () => heap.skipClasses(t, false) 

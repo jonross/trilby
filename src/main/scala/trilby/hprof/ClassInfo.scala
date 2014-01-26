@@ -140,6 +140,9 @@ class ClassInfo(options: Options) {
     def map[T](fn: ClassDef => T) =
         for (c <- byName.values) yield fn(c)
     
+    def filter(p: ClassDef => Boolean) =
+        for (c <- byName.values if p(c)) yield c
+    
     def foreach(fn: ClassDef => Unit) =
         byName.values.foreach(fn)
     
