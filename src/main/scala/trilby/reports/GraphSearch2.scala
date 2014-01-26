@@ -61,25 +61,21 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
      * Last one refers to null.  All but the first can skip objects.
      */
     
-    private def buildFinders(targets: List[Target], index: Int = 0,
-                             canSkip: Boolean = false): Finder = 
+    private def buildFinders(targets: List[Target], index: Int = 0): Finder = 
         if (targets == Nil) null
-        else new Finder(targets.head, index, canSkip, 
-                        buildFinders(targets.tail, index + 1, true))
+        else new Finder(targets.head, index, buildFinders(targets.tail, index + 1))
     
     def run() = { 
         for (id <- 1 to heap.maxId) {
             val classDef = heap.classes.getForObjectId(id)
-            if (! heap.shouldSkip(classDef)) {
-                count += 1
-                finder.check(id)
-            }
+            count += 1
+            finder.check(id)
         } 
         skipped.free()
         query.acceptor
     }
     
-    class Finder(val target: Target, index: Int, canSkip: Boolean, next: Finder) {
+    class Finder(val target: Target, index: Int, next: Finder) {
         
         // Class matched by the finder target
         val baseClass = heap.classes getByName target.types
@@ -136,8 +132,9 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
         private def doCheck(id: Int) = {
             focus(index) = id
             val classDef = heap.classes getForObjectId id
-            if (matching(classDef.classId)) {
-                // printf("Match[%d] %d a %s\n", index, id, classDef.name)
+            val skip = target.skip && heap.shouldSkip(classDef)
+            if (!skip && matching(classDef.classId)) {
+                //printf("Match[%d] %d a %s\n", index, id, classDef.name)
                 if (next != null) {
                     // We're not the end of the path so let the next finder
                     // handle the adjacent nodes.
@@ -164,7 +161,8 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                     query.acceptor.accept(funArgs)
                 }
             }
-            else if (canSkip && target.skip && heap.shouldSkip(classDef)) {
+            else if (skip) {
+                //printf("Skip[%d] %d a %s\n", index, id, classDef.name)
                 // Skipped object; search adjacent nodes with the same finder.
                 // This uses a manual stack because we cant' @tailrec the
                 // search and if we recurse we can blow up the Java stack while
@@ -192,6 +190,10 @@ class GraphSearch2(heap: Heap, query: GraphQuery) {
                             heap.forEachReferrer(id, push)
                     }
                 }
+            }
+            else {
+                // if (index > 0)
+                //    printf("Ignore[%d] %d a %s\n", index, id, classDef.name)
             }
         }
         

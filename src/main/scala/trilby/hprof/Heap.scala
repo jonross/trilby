@@ -488,7 +488,7 @@ trait SkipSet {
     private var history: List[String] = null
     private var bits: BitSet = null
     
-    def showSkippedClasses() {
+    def showSkipList() {
         history.foreach(println)
     }
     
@@ -507,6 +507,10 @@ trait SkipSet {
             }
     }
     
+    def showSkippedClasses() =
+        (for (c <- heap.classes if bits(c.classId)) yield c).
+            toList.sortWith(_.name < _.name).map(_.name).foreach(println)
+        
     def skipNone() {
         history = Nil
         bits = new BitSet(heap.classes.numClasses)
