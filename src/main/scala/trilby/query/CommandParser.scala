@@ -26,6 +26,7 @@ import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.combinator.RegexParsers
 
 import trilby.hprof.Heap
+import trilby.util.Oddments._
 
 class CommandParser(heap: Heap) extends RegexParsers
 {
@@ -117,11 +118,14 @@ class CommandParser(heap: Heap) extends RegexParsers
         "noskip" ^^ {
             case _ => () => heap.showSkippedClasses() 
         } |
+        "set" ~ "garbage" ~ "only" ^^  {
+            case _ => () => heap.setCanSee(GarbageOnly)
+        } |
         "set" ~ "garbage" ^^  {
-            case _ => () => heap.hideGarbage = false 
+            case _ => () => heap.setCanSee(AllObjects)
         } |
         "set" ~ "nogarbage" ^^ { 
-            case _ => () => heap.hideGarbage = true 
+            case _ => () => heap.setCanSee(LiveOnly)
         } |
         "set" ~ threshold ^^ {
             case _ ~ t => () => heap.threshold = t

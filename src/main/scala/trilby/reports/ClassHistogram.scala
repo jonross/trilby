@@ -27,8 +27,7 @@ import gnu.trove.map.hash.TIntObjectHashMap
 import trilby.hprof.ClassDef
 import trilby.hprof.Heap
 import trilby.query.QueryFunction
-import trilby.query.{NoLimit, MaxCount, MaxBytes, MaxRetained}
-import trilby.util.Oddments.Printable
+import trilby.util.Oddments._
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 import trilby.util.BitSet
