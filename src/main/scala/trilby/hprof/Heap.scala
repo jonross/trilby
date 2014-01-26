@@ -42,8 +42,6 @@ import trilby.graph.Dominators
 import trilby.graph.Dominators3
 import trilby.graph.DominatorsOG
 import trilby.graph.CompactIntGraph
-import trilby.query.MaxBytes
-import trilby.query.Threshold
 
 class Heap(val options: Options, val idSize: Int, val fileDate: Date) 
     extends SizeData with GCRootData with SkipSet {
@@ -288,6 +286,7 @@ class Heap(val options: Options, val idSize: Int, val fileDate: Date)
         }
         
         skipNone()
+        setCanSee(LiveOnly)
         
         staticRefs.free()
         staticRefs = null
@@ -442,12 +441,10 @@ trait GCRootData {
     
     def heap: Heap
     def log: Logger
+    var canSee = _setCanSee(AllObjects)
     
     /** Indicates which objects are live */
     private[this] var liveObjects: BitSet = null
-    
-    /** Hide unreachable objects in analyses */
-    var hideGarbage = true
     
     def addGCRoot(id: Long, desc: String) {
         heap.addReference(1, id)
@@ -470,8 +467,18 @@ trait GCRootData {
         log.info("%d of %d objects are live".format(reachable - 1, heap.maxId - 1))
     }
     
-    def canUse(oid: Int) =
-        ! heap.hideGarbage || liveObjects(oid)
+    def setCanSee(vis: GarbageVisibility) =
+        canSee = _setCanSee(vis)
+    
+    private def _setCanSee(vis: GarbageVisibility) = vis match {
+        case AllObjects =>
+            (oid: Int) => true
+        case LiveOnly =>
+            (oid: Int) => liveObjects(oid)
+        case GarbageOnly =>
+            (oid: Int) => ! liveObjects(oid)
+        
+    }
 }
 
 trait SkipSet {

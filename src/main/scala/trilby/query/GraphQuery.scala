@@ -82,13 +82,3 @@ case class Target(/** The type name / wildcard, e.g. "ArrayList" */
 trait QueryFunction {
     def accept(ids: Array[Int]): Unit
 }
-
-/**
- * Output options
- */
-
-abstract sealed trait Threshold
-case object NoLimit extends Threshold
-case class MaxCount(count: Int) extends Threshold
-case class MaxBytes(nbytes: Long) extends Threshold
-case class MaxRetained(nbytes: Long) extends Threshold

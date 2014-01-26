@@ -113,7 +113,7 @@ object Main {
         else if (options.histogram) {
             val report = new ClassHistogram(heap)
             for (id <- 1 to heap.maxId) {
-                if (heap.canUse(id)) {
+                if (heap.canSee(id)) {
                     val classDef = heap.classes.getForObjectId(id)
                     report.add(id, classDef)
                 }

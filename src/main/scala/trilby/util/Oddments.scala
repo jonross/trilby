@@ -185,4 +185,23 @@ object Oddments {
             }
         }
     }
+    
+    /**
+     * Histogram display threshold
+     */
+    
+    abstract sealed trait Threshold
+    case object NoLimit extends Threshold
+    case class MaxCount(count: Int) extends Threshold
+    case class MaxBytes(nbytes: Long) extends Threshold
+    case class MaxRetained(nbytes: Long) extends Threshold
+    
+    /**
+     * Garbage scanning options
+     */
+    
+    abstract sealed trait GarbageVisibility
+    case object AllObjects extends GarbageVisibility
+    case object LiveOnly extends GarbageVisibility
+    case object GarbageOnly extends GarbageVisibility
 }
