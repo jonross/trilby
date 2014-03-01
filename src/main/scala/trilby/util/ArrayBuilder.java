@@ -13,6 +13,10 @@ public class ArrayBuilder
             data = new int[initialCapacity];
         }
         
+        public int[] data() {
+            return data;
+        }
+        
         public int size() {
             return size;
         }
@@ -35,6 +39,10 @@ public class ArrayBuilder
         
         public OfByte(int initialCapacity) {
             data = new byte[initialCapacity];
+        }
+        
+        public byte[] data() {
+            return data;
         }
         
         public int size() {

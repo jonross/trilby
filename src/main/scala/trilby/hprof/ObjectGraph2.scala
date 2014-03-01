@@ -27,6 +27,7 @@ import trilby.graph.CompactIntGraph
 import org.slf4j.LoggerFactory
 import trilby.nonheap.HugeAutoArray
 import trilby.util.Oddments.Options
+import trilby.util.ArrayBuilder
 
 /**
  * Accumulates raw information about object references and generates
@@ -36,11 +37,17 @@ import trilby.util.Oddments.Options
 class ObjectGraphBuilder(options: Options) {
     
     /** Synthetic object IDs at source of each edge */
-    private[this] val refsFrom = new HugeAutoArray.OfInt(options.onHeap)
+    // private[this] val refsFrom = new HugeAutoArray.OfInt(options.onHeap)
+    private[this] val refsFromBuilder = new ArrayBuilder.OfInt(1000000)
+    private[this] var refsFrom: Array[Int] = null
     
     /** Heap object IDs at destination of each edge, up to 5 bytes of data */
-    private[this] val refsToLo4 = new HugeAutoArray.OfInt(options.onHeap) 
-    private[this] val refsToHi1 = new HugeAutoArray.OfByte(options.onHeap) 
+    // private[this] val refsToLo4 = new HugeAutoArray.OfInt(options.onHeap) 
+    private[this] val refsToLo4Builder = new ArrayBuilder.OfInt(1000000)
+    private[this] var refsToLo4: Array[Int] = null
+    // private[this] val refsToHi1 = new HugeAutoArray.OfByte(options.onHeap) 
+    private[this] val refsToHi1Builder = new ArrayBuilder.OfByte(1000000)
+    private[this] var refsToHi1: Array[Byte] = null
     
     /** # of unmappable references encountered */
     private var _numDead = 0
@@ -53,9 +60,9 @@ class ObjectGraphBuilder(options: Options) {
      */
     
     def addRef(fromId: Int, toId: Long) {
-        refsFrom.add(fromId)
-        refsToLo4.add((toId & 0xFFFFFFFF).asInstanceOf[Int])
-        refsToHi1.add((toId >> 32).asInstanceOf[Byte])
+        refsFromBuilder.add(fromId)
+        refsToLo4Builder.add((toId & 0xFFFFFFFF).asInstanceOf[Int])
+        refsToHi1Builder.add((toId >> 32).asInstanceOf[Byte])
     }
     
     /**
@@ -63,12 +70,15 @@ class ObjectGraphBuilder(options: Options) {
      */
     
     def mapHeapIds(idMap: IdMap) {
+        refsFrom = refsFromBuilder.data
+        refsToLo4 = refsToLo4Builder.data
+        refsToHi1 = refsToHi1Builder.data
         val dead = for (t <- 0 to 3 par) yield {
             var dead = 0
-            for (i <- t until refsToLo4.size by 4) {
-                val unmapped = (refsToHi1.get(i) << 32L) | (refsToLo4.get(i) & 0xFFFFFFFFL)
+            for (i <- t until size by 4) {
+                val unmapped = (refsToHi1(i) << 32L) | (refsToLo4(i) & 0xFFFFFFFFL)
                 val mapped = idMap(unmapped)
-                refsToLo4.set(i, mapped)
+                refsToLo4(i) = mapped
                 if (mapped == 0)
                     dead += 1
             }
@@ -80,22 +90,25 @@ class ObjectGraphBuilder(options: Options) {
     /** Release off-heap memory */
     
     def free() {
-        refsFrom.free()
-        refsToLo4.free()
-        refsToHi1.free()
+        // refsFrom.free()
+        // refsToLo4.free()
+        // refsToHi1.free()
     }
     
     /* Return # of references */
-    def size = refsFrom.size
+    def size = refsFromBuilder.size
     
     /** Return the number of unmappable references */
     def numDead = _numDead
     
-    def edges(fn: (Int, Int) => Unit) =
-        for (i <- 0 until refsFrom.size) {
-            val from = refsFrom.get(i)
-            val to = refsToLo4.get(i)
+    def edges(fn: (Int, Int) => Unit) {
+        var i = 0
+        while (i < size) {
+            val from = refsFrom(i)
+            val to = refsToLo4(i)
             if (to != 0)
                 fn(from, to)
+            i += 1
         }
+    }
 }
