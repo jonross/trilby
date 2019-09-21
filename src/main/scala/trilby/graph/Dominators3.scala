@@ -70,10 +70,16 @@ class Dominators3(val g: IntGraph, onHeap: Boolean) {
     private[this] val best = getInts(nonDirectCount + 1)
     private[this] val buck = new IntLists(onHeap)
     
+    /*
     for (offset <- 1 to PAR par) {
         for (v <- offset to g.maxNode by PAR) {
             rev.put(ord.get(v), v)
         }
+    }
+    */
+    var v = 1
+    while (v <= g.maxNode) {
+        rev.put(ord.get(v), v)
     }
                 
     private[this] val sa = new IntStack()
